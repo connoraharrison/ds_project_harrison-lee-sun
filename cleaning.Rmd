@@ -1,0 +1,33 @@
+---
+title: "Group Project Cleaning File"
+author: "Connor Harrison"
+date: "April 8, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Purpose
+For our project, we are using the "" data set from the .....Before we can perform any anlysis, we need to import and clean the data into a usable format. This will include retaining only the variables we place to use, transforming variable coding, and controlling for missing values. 
+
+
+## Import Data Set
+```{r}
+library(haven)
+epcg17 <- read_dta("epcg17.dta")
+View(epcg17)
+```
+
+## Relevant Variables
+This data set is from a large, comprehensive survey. As such, it contains data on a wide variety of topicsm many of which are not relevant for our analysis. This section of code retains only the variables that we will explore 
+```{r}
+# Drop all variables that begin with "D". These are for degrees earned after the 1st.
+
+# Keep all "E" variables; these are employment indicators
+
+# Keep all "FA" variables; these are 'importance of jobs' questions
+
+# Keep to undergraduate degrees only
+```
+

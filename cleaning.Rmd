@@ -1,6 +1,6 @@
 ---
 title: "Group Project Cleaning File"
-author: "Connor Harrison"
+author: "Connor Harrison, Dong Hoon Lee, Haorui Sun"
 date: "April 8, 2019"
 output: pdf_document
 ---
@@ -22,12 +22,20 @@ View(epcg17)
 ## Relevant Variables
 This data set is from a large, comprehensive survey. As such, it contains data on a wide variety of topicsm many of which are not relevant for our analysis. This section of code retains only the variables that we will explore 
 ```{r}
-# Drop all variables that begin with "D". These are for degrees earned after the 1st.
 
-# Keep all "E" variables; these are employment indicators
+## selecting variables
 
-# Keep all "FA" variables; these are 'importance of jobs' questions
-
-# Keep to undergraduate degrees only
+epcg17_new <-  epcg17 %>% 
+  filter(., age<36) %>% 
+  # selecting age, race, undergrad loan variable
+  select(age, racem, ugloanr, 
+         #primary/secondary work activity, public/private status of undergrad institution, year ba received
+         actcap:acttch, bapbpr, bayr,
+         # reason for changing employer
+         chchg:chloc, chot:chsch,
+         # visa type for non-US citizen, highest degree type, year highest degree awarded, father and mother's education level
+         ctzfor, dgrdg, dgryr, eddad, edmom,
+         #region code for employer, detailed employer sector, 
+         emrg, emsecdt, facadv:facsoc)
 ```
 

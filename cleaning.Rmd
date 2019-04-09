@@ -23,12 +23,13 @@ View(epcg17)
 This data set is from a large, comprehensive survey. As such, it contains data on a wide variety of topicsm many of which are not relevant for our analysis. This section of code retains only the variables that we will explore 
 ```{r}
 
-## selecting variables
+## filtering by age, creating degree variables, and selecting other variables
 
 epcg17_new <-  epcg17 %>% 
   filter(., age<36) %>% 
-  # selecting age, race, undergrad loan variable
-  select(age, racem, ugloanr, 
+  mutate(., ) %>% 
+  # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
+  select(age, racethm, ugloanr, gender, grloanr, hcapin,
          #primary/secondary work activity, public/private status of undergrad institution, year ba received
          actcap:acttch, bapbpr, bayr,
          # reason for changing employer
@@ -36,6 +37,18 @@ epcg17_new <-  epcg17 %>%
          # visa type for non-US citizen, highest degree type, year highest degree awarded, father and mother's education level
          ctzfor, dgrdg, dgryr, eddad, edmom,
          #region code for employer, detailed employer sector, 
-         emrg, emsecdt, facadv:facsoc)
+         emrg, emsecdt, facadv:facsoc,
+         # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status
+         hrswk, jobins:jobproft, jobvac, jobsatis, lfstat, lookwk, marsta,
+         # job code for last job, job code for principal job, field of study of BA degree, employer type
+         n2ocmlst, n2ocprmg, nbamed, nedtp,
+         # reasons for working outside field of highest degree, most important reason for working outside field
+         nrchg:nrpay, nrrea,
+         # reasons for not working, extent job is related to highest degree, reason worked part-time
+         nwfam:nwstu, ocedrlp, pjfam:pjstu,
+         # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
+         resploc, salary, satadv:satsoc, spowk, strtyr,
+         # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
+         ugower, grower, vetstat)
 ```
 

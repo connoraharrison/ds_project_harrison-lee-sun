@@ -24,7 +24,7 @@ View(epcg17)
 This data set is from a large, comprehensive survey. As such, it contains data on a wide variety of topicsm many of which are not relevant for our analysis. This section of code retains only the variables that we will explore 
 ```{r}
 
-## filtering by age, creating degree variables, and selecting other variables
+## filtering by age, selecting variables of interest, creating key indicators
 
 epcg17_new <-  epcg17 %>% 
   filter(., age<36) %>% 
@@ -88,7 +88,12 @@ epcg17_new <-  epcg17 %>%
                                                   ifelse(d3dg=="4", 1,
                                                          ifelse(d4dg=="4",1,
                                                                 ifelse(d5dg=="4", 1, 0)))))))
-
 head(epcg17_new)
+
+table(epcg17_new$ugloanr)
+### There are 687 (ugloanr==1) people who did not earn a BA but are included in the data because they have earned other graduate degrees
+### We can decide whether we want to keep these in our sample or not.
+
+
 ```
 

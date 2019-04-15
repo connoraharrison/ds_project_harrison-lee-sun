@@ -30,14 +30,14 @@ epcg17_new <-  epcg17 %>%
   filter(., age<36) %>% 
   # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
   select(age, racethm, ugloanr, gender, grloanr, hcapin,
-         #degree information
+         #degree information, second to fifth highest degrees, highest degree, most recent degree
          d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
          #primary/secondary work activity, public/private status of undergrad institution, year ba received
          actcap:acttch, bapbpr, bayr,
          # reason for changing employer
          chchg:chloc, chot:chsch,
-         # visa type for non-US citizen, highest degree type, year highest degree awarded, father and mother's education level
-         ctzfor, dgrdg, dgryr, eddad, edmom,
+         # visa type for non-US citizen, year highest degree awarded, father and mother's education level
+         ctzfor, dgryr, eddad, edmom,
          #region code for employer, detailed employer sector, 
          emrg, emsecdt, facadv:facsoc,
          # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status

@@ -15,6 +15,7 @@ For our project, we are using the "" data set from the .....Before we can perfor
 ## Import Data Set
 ```{r}
 library(haven)
+library(tidyverse)
 epcg17 <- read_dta("epcg17.dta")
 View(epcg17)
 ```
@@ -27,9 +28,10 @@ This data set is from a large, comprehensive survey. As such, it contains data o
 
 epcg17_new <-  epcg17 %>% 
   filter(., age<36) %>% 
-  mutate(., ) %>% 
   # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
   select(age, racethm, ugloanr, gender, grloanr, hcapin,
+         #degree information
+         d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
          #primary/secondary work activity, public/private status of undergrad institution, year ba received
          actcap:acttch, bapbpr, bayr,
          # reason for changing employer
@@ -49,6 +51,44 @@ epcg17_new <-  epcg17 %>%
          # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
          resploc, salary, satadv:satsoc, spowk, strtyr,
          # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
-         ugower, grower, vetstat)
+         ugower, grower, vetstat) %>% 
+  # creating gender and race indicators
+  mutate(., female = ifelse(gender=="F", 1,0)) %>% 
+  mutate(., race_white = ifelse(racethm=="5",1,0 )) %>% 
+  mutate(., race_black = ifelse(racethm=="3",1,0 )) %>% 
+  mutate(., race_hispanic = ifelse(racethm=="4",1,0 )) %>%
+  mutate(., race_asian = ifelse(racethm=="1",1,0 )) %>%
+  mutate(., race_other = ifelse(racethm=="2" | racethm=="6" | racethm=="7", 1,0)) %>% 
+  # replacing 9999998 to NA for salary variable
+  mutate(., salary= ifelse(salary==9999998, NA, salary)) %>% 
+  # bachelor degree indicator
+  mutate(., bachelor_degree= ifelse(mrdg=="1", 1,
+                                    ifelse(dgrdg=="1", 1,
+                                           ifelse(d2dg=="1", 1,
+                                                  ifelse(d3dg=="1", 1,
+                                                         ifelse(d4dg=="1",1,
+                                                                ifelse(d5dg=="1", 1, 0))))))) %>%
+  # master's degree indicator
+  mutate(., master_degree= ifelse(mrdg=="2", 1,
+                                    ifelse(dgrdg=="2", 1,
+                                           ifelse(d2dg=="2", 1,
+                                                  ifelse(d3dg=="2", 1,
+                                                         ifelse(d4dg=="2",1,
+                                                                ifelse(d5dg=="2", 1, 0))))))) %>%
+  mutate(., doctorate_degree= ifelse(mrdg=="3", 1,
+                                    ifelse(dgrdg=="3", 1,
+                                           ifelse(d2dg=="3", 1,
+                                                  ifelse(d3dg=="3", 1,
+                                                         ifelse(d4dg=="3",1,
+                                                                ifelse(d5dg=="3", 1, 0))))))) %>%
+  # professional degree
+  mutate(., professional_degree= ifelse(mrdg=="4", 1,
+                                    ifelse(dgrdg=="4", 1,
+                                           ifelse(d2dg=="4", 1,
+                                                  ifelse(d3dg=="4", 1,
+                                                         ifelse(d4dg=="4",1,
+                                                                ifelse(d5dg=="4", 1, 0)))))))
+
+head(epcg17_new)
 ```
 

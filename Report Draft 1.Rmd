@@ -6,11 +6,10 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r}
-knitr::opts_chunk$set(echo=FALSE)
 ## Data Wrangling - Won't be included in the knit pdf output.
 ## filtering by age, selecting variables of interest, creating key indicators
 
@@ -87,7 +86,6 @@ table(epcg17_new$ugloanr)
 ```
 
 ```{r}
-knitr::opts_chunk$set(echo=FALSE)
 # Plots
 
 # These are some of the charts I used for data viz class
@@ -113,7 +111,7 @@ dataforplot1 <- epcg17_new %>%
                                             "South Central", "East South Central", "West South Central",
                                             "Mountain", "Pacific and US Territories")))
 
-# Visual #1
+# ggplot code for Visual 1
 ggplot(data=dataforplot1) +
   geom_density(aes(x=as.numeric(ugloanr), fill=racethm_new), alpha=0.4, position = "stack") +
   facet_wrap(~emrg_factor) +
@@ -130,8 +128,8 @@ ggplot(data=dataforplot1) +
                                    size=8, angle=25))
 
 
-## vis 2
-# data set for the visual
+## Visual 2
+# data set creation for the visual 2 and 3
 dataforplot2 <- epcg17_new %>%
   filter(., jobsatis!="L" & emrg<10) %>%
   select(., ugloanr,satsal,emrg) %>% 
@@ -140,9 +138,15 @@ dataforplot2 <- epcg17_new %>%
                                 ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
                                        ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
                                               ifelse(as.numeric(ugloanr)>8 & as.numeric(ugloanr)<12,4,5))))) %>%
-  mutate(.,satsal_satisfied = if_else(satsal=="1" | satsal =="2", 1, 0)) %>% 
+  mutate(.,satadv_satisfied = if_else(satadv=="1" | satadv =="2", 1, 0)) %>% 
+  mutate(.,satben_satisfied = if_else(satben=="1" | satben =="2", 1, 0)) %>%
+  mutate(.,satsal_satisfied = if_else(satsal=="1" | satsal =="2", 1, 0)) %>%
+  mutate(.,satsec_satisfied = if_else(satsec=="1" | satsec =="2", 1, 0)) %>%
+  mutate(.,satresp_satisfied = if_else(satresp=="1" | satresp =="2", 1, 0)) %>% 
   group_by(.,ugloanr_group, emrg) %>% 
-  summarize(.,mean_satsal_sat=mean(satsal_satisfied),
+  summarize(.,mean_satadv_sat=mean(satadv_satisfied),
+            mean_satben_sat=mean(satben_satisfied), mean_satsal_sat=mean(satsal_satisfied),
+            mean_satsec_sat=mean(satsec_satisfied), mean_satresp_sat=mean(satresp_satisfied),
             obscount=sum(obscount)) %>% 
   mutate(.,emrg_char=ifelse(emrg=="01","New England",
                             ifelse(emrg=="02", "Middle Atlantic",
@@ -157,7 +161,7 @@ dataforplot2 <- epcg17_new %>%
                                             "South Central", "East South Central", "West South Central",
                                             "Mountain", "Pacific and US Territories")))
 
-# Visual 2
+# ggplot code for visual 2
 ggplot(dataforplot2, aes(x=emrg_factor, y=mean_satsal_sat, color=as.character(ugloanr_group), group=as.character(ugloanr_group))) +
   geom_point() +
   geom_line() +
@@ -174,5 +178,7 @@ ggplot(dataforplot2, aes(x=emrg_factor, y=mean_satsal_sat, color=as.character(ug
         panel.grid.major.x =element_line(colour = "grey", size = 0.5),
         axis.text.x = element_text(face="bold", 
                                    size=8, angle=20))
+
+# Visual 3
 ```
 

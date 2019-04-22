@@ -1,0 +1,389 @@
+---
+title: "Group Project Report Draft"
+author: "Connor Harrison, Dong Hoon Lee, Haorui Sun"
+date: "April 21, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+# Load Packages
+library(haven)
+library(tidyverse)
+library(caret)
+library(recipes)
+library(pdp)
+library(skimr)
+library(foreach)
+library(pastecs)
+```
+
+```{r, include=FALSE}
+## Data Wrangling - Won't be included in the knit pdf output.
+## filtering by age, selecting variables of interest, creating key indicators
+
+epcg17 <- read_dta("epcg17.dta")
+
+epcg17_new <-  epcg17 %>% 
+  filter(., age<36 & bast=="099" & bayr>1975 & ugloanr!="01") %>% 
+  # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
+  select(age, racethm, ugloanr, gender, grloanr, hcapin,
+         #degree information, second to fifth highest degrees, highest degree, most recent degree
+         d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
+         #primary/secondary work activity, public/private status of undergrad institution, year ba received
+         actcap:acttch, bapbpr, bayr,
+         # reason for changing employer
+         chchg:chloc, chot:chsch,
+         # visa type for non-US citizen, year highest degree awarded, father and mother's education level
+         ctzfor, dgryr, eddad, edmom,
+         #region code for employer, detailed employer sector, 
+         emrg, emsecdt, facadv:facsoc,
+         # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status
+         hrswk, jobins:jobproft, jobvac, jobsatis, lfstat, lookwk, marsta,
+         # job code for last job, job code for principal job, field of study of BA degree, employer type
+         n2ocmlst, n2ocprmg, nbamed, nedtp,
+         # reasons for working outside field of highest degree, most important reason for working outside field
+         nrchg:nrpay, nrrea,
+         # reasons for not working, extent job is related to highest degree, reason worked part-time
+         nwfam:nwstu, ocedrlp, pjfam:pjstu,
+         # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
+         resploc, salary, satadv:satsoc, spowk, strtyr,
+         # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
+         ugower, grower, vetstat) %>% 
+  # creating gender and race indicators
+  mutate(., female = ifelse(gender=="F", 1,0)) %>% 
+  mutate(., race_white = ifelse(racethm=="5",1,0 )) %>% 
+  mutate(., race_black = ifelse(racethm=="3",1,0 )) %>% 
+  mutate(., race_hispanic = ifelse(racethm=="4",1,0 )) %>%
+  mutate(., race_asian = ifelse(racethm=="1",1,0 )) %>%
+  mutate(., race_other = ifelse(racethm=="2" | racethm=="6" | racethm=="7", 1,0)) %>% 
+  # replacing 9999998 to NA for salary variable
+  mutate(., salary= ifelse(salary==9999998, NA, salary)) %>% 
+  # bachelor degree indicator
+  mutate(., bachelor_degree= ifelse(mrdg=="1", 1,
+                                    ifelse(dgrdg=="1", 1,
+                                           ifelse(d2dg=="1", 1,
+                                                  ifelse(d3dg=="1", 1,
+                                                         ifelse(d4dg=="1",1,
+                                                                ifelse(d5dg=="1", 1, 0))))))) %>%
+  # master's degree indicator
+  mutate(., master_degree= ifelse(mrdg=="2", 1,
+                                    ifelse(dgrdg=="2", 1,
+                                           ifelse(d2dg=="2", 1,
+                                                  ifelse(d3dg=="2", 1,
+                                                         ifelse(d4dg=="2",1,
+                                                                ifelse(d5dg=="2", 1, 0))))))) %>%
+  mutate(., doctorate_degree= ifelse(mrdg=="3", 1,
+                                    ifelse(dgrdg=="3", 1,
+                                           ifelse(d2dg=="3", 1,
+                                                  ifelse(d3dg=="3", 1,
+                                                         ifelse(d4dg=="3",1,
+                                                                ifelse(d5dg=="3", 1, 0))))))) %>%
+  # professional degree
+  mutate(., professional_degree= ifelse(mrdg=="4", 1,
+                                    ifelse(dgrdg=="4", 1,
+                                           ifelse(d2dg=="4", 1,
+                                                  ifelse(d3dg=="4", 1,
+                                                         ifelse(d4dg=="4",1,
+                                                                ifelse(d5dg=="4", 1, 0)))))))
+head(epcg17_new)
+
+table(epcg17_new$ugloanr)
+```
+
+```{r, include=FALSE}
+# Plots
+
+# These are some of the charts I used for data viz class
+library(ggplot2)
+
+# visual 1
+# Data set for visual 1
+dataforplot1 <- epcg17_new %>%
+  filter(., jobsatis!="L" & emrg<10) %>% 
+  mutate(., racethm_new = ifelse(racethm == 5, "White",
+                                 ifelse(racethm == 2 | racethm > 5, "Other",
+                                        ifelse(racethm == 1, "Asian",
+                                               ifelse(racethm==3, "Black", "Hispanic"))))) %>% 
+  mutate(.,emrg_char=ifelse(emrg=="01","New England",
+                            ifelse(emrg=="02", "Middle Atlantic",
+                                   ifelse(emrg=="03", "East North Central",
+                                          ifelse(emrg=="04", "West North Central",
+                                                 ifelse(emrg=="05", "South Central",
+                                                        ifelse(emrg=="06", "East South Central",
+                                                               ifelse(emrg=="07", "West South Central",
+                                                                      ifelse(emrg=="08", "Mountain", "Pacific and US Territories"))))))))) %>% 
+  mutate(.,emrg_factor=factor(emrg_char, c("New England", "Middle Atlantic", "East North Central", "West North Central",
+                                            "South Central", "East South Central", "West South Central",
+                                            "Mountain", "Pacific and US Territories")))
+
+# ggplot code for Visual 1
+ggplot(data=dataforplot1) +
+  geom_density(aes(x=as.numeric(ugloanr), fill=racethm_new), alpha=0.4, position = "stack") +
+  facet_wrap(~emrg_factor) +
+  scale_x_continuous(name ="Undergraduate Loan Amounts", 
+                     breaks = c(2:12),
+                     labels = c("$0", "", "", "", "", "$40,001-50,000", "", "", "", "", "More than $90,000" ))+
+  labs(title ="Undergraudate Student Loan Borrowing Trend by the Employer Region and the Race of the Respondent",
+       caption = "Data: National Survey of College Graduates") +
+  theme(axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major.x =element_line(colour = "grey", size = 0.5),
+        axis.text.x = element_text(face="bold", 
+                                   size=8, angle=25))
+
+
+## Visual 2
+# data set creation for the visual 2 and 3
+dataforplot2 <- epcg17_new %>%
+  filter(., jobsatis!="L" & emrg<10) %>%
+  select(., ugloanr,satsal,emrg) %>% 
+  mutate(.,obscount=1) %>%
+  mutate(.,ugloanr_group=ifelse(as.numeric(ugloanr)==2, 1,
+                                ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
+                                       ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
+                                              ifelse(as.numeric(ugloanr)>8 & as.numeric(ugloanr)<12,4,5))))) %>%
+  mutate(.,satadv_satisfied = if_else(satadv=="1" | satadv =="2", 1, 0)) %>% 
+  mutate(.,satben_satisfied = if_else(satben=="1" | satben =="2", 1, 0)) %>%
+  mutate(.,satsal_satisfied = if_else(satsal=="1" | satsal =="2", 1, 0)) %>%
+  mutate(.,satsec_satisfied = if_else(satsec=="1" | satsec =="2", 1, 0)) %>%
+  mutate(.,satresp_satisfied = if_else(satresp=="1" | satresp =="2", 1, 0)) %>% 
+  group_by(.,ugloanr_group, emrg) %>% 
+  summarize(.,mean_satadv_sat=mean(satadv_satisfied),
+            mean_satben_sat=mean(satben_satisfied), mean_satsal_sat=mean(satsal_satisfied),
+            mean_satsec_sat=mean(satsec_satisfied), mean_satresp_sat=mean(satresp_satisfied),
+            obscount=sum(obscount)) %>% 
+  mutate(.,emrg_char=ifelse(emrg=="01","New England",
+                            ifelse(emrg=="02", "Middle Atlantic",
+                                   ifelse(emrg=="03", "East North Central",
+                                          ifelse(emrg=="04", "West North Central",
+                                                 ifelse(emrg=="05", "South Central",
+                                                        ifelse(emrg=="06", "East South Central",
+                                                               ifelse(emrg=="07", "West South Central",
+                                                                      ifelse(emrg=="08", "Mountain", "Pacific and US Territories"))))))))) %>% 
+  filter(., obscount>=50) %>% 
+  mutate(.,emrg_factor=factor(emrg_char, c("New England", "Middle Atlantic", "East North Central", "West North Central",
+                                            "South Central", "East South Central", "West South Central",
+                                            "Mountain", "Pacific and US Territories")))
+
+# ggplot code for visual 2
+ggplot(dataforplot2, aes(x=emrg_factor, y=mean_satsal_sat, color=as.character(ugloanr_group), group=as.character(ugloanr_group))) +
+  geom_point() +
+  geom_line() +
+  scale_color_brewer(name = "Loan Amount",
+                     type=qual,
+                     palette = "Set1",
+                     labels = c("1"="$0", "2"="$1-30,000", "3"="$30,001-60,000", "4"="$60,001-90,000", "5" = "More than $90,000")) +
+  labs(title ="Changes in Salary Satisfaction Varies by Undergraduate Loan Amount and Region of Employer",
+       caption = "Data: National Survey of College Graduates") +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major.x =element_line(colour = "grey", size = 0.5),
+        axis.text.x = element_text(face="bold", 
+                                   size=8, angle=20))
+
+# Visual 3
+```
+
+# Using Machine Learning to Identify Predictors of Job and Salary Satisfaction
+Now that we've identified the primary variables that can potentially influence job and salary satisfaction, we can use machine learning to predict which outcomes and characteristics of recent graduates influence these outcomes. 
+
+```{r, include=FALSE}
+# Partition data into training and test (replace outcome)
+index = createDataPartition(epcg17_new$satisfaction,p=.75,list=F) 
+epcg_train = epcg17_new[index,] # Use 75% of the data as training data 
+epcg_test = epcg17_new[-index,] # holdout 25% as test data 
+
+dim(epcg_train)
+dim(epcg_test) 
+
+stat.desc(epcg_train)
+```
+```{r, include=FALSE}
+# Continuous variables that may need redistributing: salary
+convert_salary <- . %>% mutate(salary = log(salary+1))
+
+epcg_train2 <- epcg_train %>%  convert_salary()
+epcg_test2 <- epcg_test %>%  convert_salary()
+
+epcg_train2 %>% 
+  ggplot(aes(salary)) +
+  geom_histogram()
+```
+
+```{r, include=FALSE}
+### This chunk prepares the data for use in the machine learning models ###
+
+# Prep the recipe
+rcp <- 
+  recipe(satisfaction~.,epcg_train2) %>% 
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  step_range(salary, hrswk, age) %>%
+  step_knnimpute(all_predictors()) %>%
+  prep()
+
+# Bake the recipe
+epcg_train3 <- bake(rcp,epcg_train2)
+epcg_test3 <- bake(rcp,epcg_test3)
+
+# Glimpse training data to make sure conversions worked. 
+head(epcg_train3)
+
+# Set seed for replicability
+set.seed(123)  
+
+# Partition the data into 5 equal folds
+folds <- createFolds(epcg_train3$satisfaction, k = 5) 
+
+# Apply the folds
+sapply(folds,length)
+
+# Setting the control conditions to compare results across different model specifications
+control_conditions <- 
+  trainControl(method='cv',
+               summaryFunction = twoClassSummary,
+               classProbs = TRUE, 
+               index = folds)
+```
+
+
+```{r, include=FALSE}
+# KKN Model
+epgc_mod_knn <-
+  train(Status ~ .,
+        data=epcg_train3,
+        method = "knn",
+        metric = "ROC",
+        trControl = control_conditions)
+epgc_mod_knn
+
+# View performance using ROC curve
+plot(epgc_mod_knn)
+```
+
+```{r, include=FALSE}
+# Tuned KNN Model
+knn_tune = expand.grid(k = c(1,3,5,10))
+epgc_mod_knn2 <-
+  train(Status ~ .,
+        data=epcg_train3,
+        method = "knn",
+        metric = "ROC",
+        tuneGrid = knn_tune,
+        trControl = control_conditions)
+epgc_mod_knn2
+# View performance using ROC curve
+plot(epgc_mod_knn2)
+```
+
+```{r, include=FALSE}
+# Regression Tree Model
+epgc_mod_cart <-
+  train(Status ~ .,
+        data=epcg_train3,  
+        method = "rpart", 
+        metric = "ROC", 
+        trControl = control_conditions)
+
+epgc_mod_cart
+# View performance using ROC curve
+plot(epgc_mod_cart)
+```
+
+```{r, include=FALSE}
+# Set tuning parameter for regression tree
+tune_cart2 <- expand.grid(cp = c(0.0010281))
+
+# Expanded Regression Tree Model
+epgc_mod_cart2 <-
+  train(Status ~ .,
+        data=epcg_train3,  
+        method = "rpart", 
+        metric = "ROC", 
+        tuneGrid = tune_cart2,
+        trControl = control_conditions)
+
+epgc_mod_cart2
+# View performance using ROC curve
+plot(epgc_mod_cart2)
+```
+
+```{r, include=FALSE}
+# Random Forest Model
+epgc_mod_rf <-
+  train(Status ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity', 
+        trControl = control_conditions)
+epgc_mod_rf
+```
+
+```{r, include=FALSE}
+# Set tuning parameters for Random Forest Model
+epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+
+# Tuned Random Forest Model
+epgc_mod_rf2 <-
+  train(Status ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity',
+        tuneGrid = tune_rf,
+        trControl = control_conditions)
+
+epgc_mod_rf2
+```
+
+```{r, include=FALSE}
+# Cmpare the performance of the different machine learning models
+mod_list <-
+  list(
+    knn1 = epgc_mod_knn,
+    knn2 = epgc_mod_knn2,
+    cart1 = epgc_mod_cart,
+    cart2 = epgc_mod_cart2,
+    rf = epgc_mod_rf,
+    rf2 = epgc_mod_rf2
+  )
+
+resamples(mod_list)
+```
+## Which Model predicts our outcome the best?
+```{r}
+# Plotting Performance
+dotplot(resamples(mod_list))
+```
+
+# Testing the Model
+Now that we have run six different machine learning models - two iterations of each K Nearest Neighbor, Regression Tree, and Random Forest models - we can test the predictive accuracy of the model that performed the best on our training data, the (fill in later) model. To do so, we will use a "confusion matrix", which shows how accurate our model is in predicting true positives, false positives, false negatives, and true negatives. The results of the confusion matrix for the (fill in later) model are shown below:
+```{r}
+pred <- predict(mod_rf2,newdata = epcg_test3)
+confusionMatrix(table(pred,epcg_test3$satisfaction))
+```
+This output provides us with the predictive accuracy across the three main categories of the confusion matrix; Accuracy (ie. true positive, at XX%), Specificity (XX%), and Sensitivity (XX%). These results show that ...
+
+Knowing this information, we can now break down the model to examine which specific factors have the greatest influence over our outcome. In other words, what factors influence job satisfaction to the greatest degree? The following plot ranks each variable by predictive accuracy in measuring job satisfaction:
+```{r}
+plot(varImp(`best performing model`))
+```
+
+With these variables identified, we measured [info about partial dependency plots...]
+```{r}
+partial(`best performing model`,pred.var = "var1",plot = T)
+```
+
+```{r}
+partial(`best performing model`,pred.var = "var2",plot = T)
+```
+
+```{r}
+partial(`best performing model`,pred.var = "var3",plot = T)
+```
+
+# Conclusion

@@ -13,10 +13,11 @@ library(tidyverse)
 library(caret)
 library(recipes)
 library(pdp)
-library(skimr)
 library(foreach)
 library(pastecs)
+library(tinytex)
 ```
+
 ```{r, include=FALSE}
 ## Data Wrangling - Won't be included in the knit pdf output.
 ## filtering by age, selecting variables of interest, creating key indicators
@@ -515,7 +516,8 @@ ggplot(dataforplot8, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
 
 
 ```
-In figures 9and 10, we created bar charts to show the distribution of the responses for job satisfaction questionnaire over salary and age groups. The percent of satisfied and very satisfied responses increased with increasing salary amounts and age. However, the changes were very small and, therefore, difficult to be claimed as meaningful.
+In figures 9 and 10, we created bar charts to show the distribution of the responses for job satisfaction questionnaire over salary and age groups. The percent of satisfied and very satisfied responses increased with increasing salary amounts and age. However, the changes were very small and, therefore, difficult to be claimed as meaningful.
+
 Through this visual analysis method, we found few patterns that suggested quadratic relationships between our dependent and independent variables. However, the satisfaction levels were generally very high (around 85%) and had small variations in them, which meant that there was little room for meaningful variations to be observed. And because this analysis is limited to three variables at a time, these relationships cannot be interpreted as casual or definitive as there could be omitted variable bias that is affecting the relationships observed.
 
 ```{r}
@@ -657,8 +659,8 @@ epcg_ml <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salar
 ```{r, include=FALSE}
 # Ensure all factor levels are correct
 epcg_ml$job_satisfaction <- factor(epcg_ml$job_satisfaction, 
-                                      levels = c(0, 1), 
-                                      labels = c("Not_Satisfied", "Satisfied"))
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
 
 # Partition data into training and test
 index = createDataPartition(epcg_ml$job_satisfaction,p=.75,list=F) 
@@ -721,7 +723,7 @@ control_conditions <-
 
 
 
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # KKN Model
 epgc_mod_knn <-
   train(job_satisfaction ~ .,
@@ -737,7 +739,7 @@ epgc_mod_knn
 plot(epgc_mod_knn)
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # Tuned KNN Model
 knn_tune = expand.grid(k = c(1,3,5,10))
 epgc_mod_knn2 <-
@@ -755,7 +757,7 @@ epgc_mod_knn2
 plot(epgc_mod_knn2)
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # Regression Tree Model
 epgc_mod_cart <-
   train(job_satisfaction ~ .,
@@ -772,7 +774,7 @@ epgc_mod_cart
 plot(epgc_mod_cart)
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # Set tuning parameter for regression tree
 tune_cart2 <- expand.grid(cp = c(0.0010281))
 
@@ -788,12 +790,7 @@ epgc_mod_cart2 <-
 epgc_mod_cart2
 ```
 
-```{r}
-# View performance using ROC curve
-plot(epgc_mod_cart2)
-```
-
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # Random Forest Model
 epgc_mod_rf <-
   train(job_satisfaction ~ ., 
@@ -806,7 +803,7 @@ epgc_mod_rf <-
 epgc_mod_rf
 ```
 
-```{r, include=FALSE}
+```{r, include=FALSE, cache=TRUE}
 # Set tuning parameters for Random Forest Model
 epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
 
@@ -844,7 +841,7 @@ dotplot(resamples(mod_list))
 ```
 
 # Testing the Model
-Now that we have run six different machine learning models - two iterations of each K Nearest Neighbor, Regression Tree, and Random Forest models - we can test the predictive accuracy of the model that performed the best on our training data, the (fill in later) model. To do so, we will use a "confusion matrix", which shows how accurate our model is in predicting true positives, false positives, false negatives, and true negatives. The results of the confusion matrix for the (fill in later) model are shown below:
+Now that we have run six different machine learning models - two iterations of each K Nearest Neighbor, Regression Tree, and Random Forest models - we can test the predictive accuracy of the model that performed the best on our training data, the tuned Random Forest model. To do so, we will use a "confusion matrix", which shows how accurate our model is in predicting true positives, false positives, false negatives, and true negatives. The results of the confusion matrix for the tuned Random Forest model are shown below:
 ```{r}
 pred <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred,epcg_test3$job_satisfaction))
@@ -853,24 +850,23 @@ This output provides us with the predictive accuracy across the three main categ
 
 Knowing this information, we can now break down the model to examine which specific factors have the greatest influence over our outcome. In other words, what factors influence job satisfaction to the greatest degree? The following plot ranks each variable by predictive accuracy in measuring job satisfaction:
 
-```{r, fig.height=10,fig.width=5}
+```{r, fig.height=10,fig.width=5, cache=TRUE}
 plot(varImp(epgc_mod_rf2))
 ```
 
 With these variables identified, we measured [info about partial dependency plots...]
-```{r}
+```{r,cache=TRUE}
 partial(epgc_mod_rf2, pred.var = "salary", plot = T)
 ```
 
-```{r}
+```{r, cache=TRUE}
 partial(epgc_mod_rf2, pred.var = "age", plot = T)
 ```
 
-```{r}
+```{r, cache=TRUE}
 partial(epgc_mod_rf2, pred.var = "race_X5", plot = T)
 ```
 
-After running 
 
 ```{r}
 pred <- predict(epgc_mod_knn2, newdata = epcg_test3)
@@ -884,7 +880,7 @@ confusionMatrix(table(pred_cart2,epcg_test3$job_satisfaction))
 ```
 
 
-```{r}
+```{r, include=FALSE}
 epcg17_all <-  epcg17 %>% 
   filter(., ugloanr!="01" & emrg<10) %>% 
   # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
@@ -961,8 +957,8 @@ epcg_ml_all <- select(epcg17_all, "age"=age, "race"=racethm, "gender"=gender, "s
 
 # Ensure all factor levels are correct
 epcg_ml_all$job_satisfaction <- factor(epcg_ml_all$job_satisfaction, 
-                                      levels = c(0, 1), 
-                                      labels = c("Not_Satisfied", "Satisfied"))
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
 
 index = createDataPartition(epcg_ml_all$job_satisfaction,p=.75,list=F) 
 epcg_train = epcg_ml_all[index,] # Use 75% of the data as training data 
@@ -1007,7 +1003,9 @@ control_conditions <-
                summaryFunction = twoClassSummary,
                classProbs = TRUE, 
                index = folds)
+```
 
+```{r, include=FALSE, cache=TRUE}
 # Set tuning parameters for Random Forest Model
 epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
 
@@ -1023,12 +1021,15 @@ epgc_mod_rf2 <-
 
 epgc_mod_rf2
 ```
-```{r}
+
+
+```{r, include=FALSE}
 pred_rf2_all <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred_rf2_all,epcg_test3$job_satisfaction))
 ```
+
 New machine learning models using satisfaction with salary and career advancement as the outcomes of interest.
-```{r}
+```{r, include=FALSE}
 epcg_ml_sal <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary, 
                   "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
                   "employer_sector"=emsecdt, "loan_amount"=ugloanr, "salary_satisfaction"=satsal_satisfied)
@@ -1077,7 +1078,9 @@ control_conditions <-
 
 # Set tuning parameters for Random Forest Model
 epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+```
 
+```{r, include=FALSE, cache=TRUE}
 # Tuned Random Forest Model
 epgc_mod_rf2 <-
   train(salary_satisfaction ~ ., 
@@ -1089,15 +1092,20 @@ epgc_mod_rf2 <-
         trControl = control_conditions)
 
 epgc_mod_rf2
-
 ```
 
-```{r}
+```{r, include=FALSE}
 pred_rf2_salary <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred_rf2_salary,epcg_test3$salary_satisfaction))
 ```
 
-```{r}
+```{r, include=FALSE}
+# Variable Importance Plot: Salary Satisfaction
+plot(varImp(epgc_mod_rf2))
+```
+
+
+```{r, include=FALSE}
 epcg_ml_adv <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary,
                   "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
                   "employer_sector"=emsecdt, "loan_amount"=ugloanr, "adv_satisfaction"=satadv_satisfied)
@@ -1146,7 +1154,9 @@ control_conditions <-
 
 # Set tuning parameters for Random Forest Model
 epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+```
 
+```{r, include=FALSE, cache=TRUE}
 # Tuned Random Forest Model
 epgc_mod_rf2 <-
   train(adv_satisfaction ~ ., 
@@ -1160,8 +1170,17 @@ epgc_mod_rf2 <-
 epgc_mod_rf2
 ```
 
-```{r}
+```{r, include=FALSE}
 pred_rf2_adv <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred_rf2_adv,epcg_test3$adv_satisfaction))
 ```
  
+```{r, include=FALSE}
+# Variable Importance Plot: Career Advancement Satisfaction
+plot(varImp(epgc_mod_rf2))
+```
+
+```{r}
+options(tinytex.verbose = TRUE)
+```
+

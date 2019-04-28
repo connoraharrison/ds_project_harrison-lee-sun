@@ -1,11 +1,13 @@
 ---
 title: "Predicting job mismatch through analyzing overall job satisfaction"
-author: "Harri-Lee-Sun" 
+author: "Harri-Lee-Sun"
 date: "2019/4/27"
 output:
   ioslides_presentation:
-    incremental: true
-    widescreen: true
+    incremental: yes
+    widescreen: yes
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -15,7 +17,15 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Problem statement and background
 
-- The upward trend of the cost of higher education has not been accompanied by an upward increase in incomes
+- The cost of higher education has increased but incomes hasn't
+
+- Student debt has also increased significantly
+
+- Student loan debt in 2018: $1.5 trillion
+
+- Graduating class of 2016 has average of $37,000 student loan.
+
+## Problem statement and background
 
 - Less studies focus on the effects of the level of students loans debt has on students’ post-graduation decision-making
 

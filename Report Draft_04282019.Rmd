@@ -16,6 +16,10 @@ library(pdp)
 library(foreach)
 library(pastecs)
 library(tinytex)
+library(ranger)
+library(e1071)
+library(knitr)
+library(tinytex)
 ```
 
 ```{r, include=FALSE}
@@ -734,7 +738,7 @@ epgc_mod_knn <-
 epgc_mod_knn
 ```
 
-```{r}
+```{r, include=FALSE}
 # View performance using ROC curve
 plot(epgc_mod_knn)
 ```
@@ -752,7 +756,7 @@ epgc_mod_knn2 <-
 epgc_mod_knn2
 ```
 
-```{r}
+```{r, include=FALSE}
 # View performance using ROC curve
 plot(epgc_mod_knn2)
 ```
@@ -769,7 +773,7 @@ epgc_mod_cart <-
 epgc_mod_cart
 ```
 
-```{r}
+```{r, include=FALSE}
 # View performance using ROC curve
 plot(epgc_mod_cart)
 ```
@@ -835,6 +839,8 @@ mod_list <-
 resamples(mod_list)
 ```
 ## Which Model predicts our outcome the best?
+To compare which of the six machine learning models performed the best on the training data, we can create a dotplot, which creates an easy-to-assess visual of model performance across three measures: the area under the ROC curve (or total predictive power), sensitivity, and specificity. The plot below ranks the models by performance across these metrics.
+
 ```{r}
 # Plotting Performance
 dotplot(resamples(mod_list))
@@ -846,19 +852,20 @@ Now that we have run six different machine learning models - two iterations of e
 pred <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred,epcg_test3$job_satisfaction))
 ```
-This output provides us with the predictive accuracy across the three main categories of the confusion matrix; Accuracy (ie. true positive, at XX%), Specificity (XX%), and Sensitivity (XX%). These results show that ...
+Accuracy is the rate at which the model correctly identifies that an individual is satisfied with their job; specificity is the rate the model correctly classifies true negatives, and sensitivity, which is the rate at which the model correctly classifies all true positives. While this model is highly accurate with an accuracy rate of 87.7%, we can see there is a clear issue with the model’s predictive ability as the sensitivity is 100% and specificity is 0%. The confusion matrix for this model shows that it predicted an individual is satisfied with their job 100% of the time, which means all true positives are identified and no true negatives were identified. The high accuracy of the model comes from the fact that individuals in the data were much more likely to report being satisfied with their job than unsatisfied. Therefore, because the ‘positive’ outcome is so prevalent, the model always predicts the positive outcome, making the accuracy of the model equal to the prevalence of the positive outcome in the data. 
 
-Knowing this information, we can now break down the model to examine which specific factors have the greatest influence over our outcome. In other words, what factors influence job satisfaction to the greatest degree? The following plot ranks each variable by predictive accuracy in measuring job satisfaction:
+With this information in mind, we can now break down the model into individual predictive factors to examine which variables have the greatest influence over our outcome. In other words, what factors influence job satisfaction to the greatest degree? The following plot ranks each variable by predictive accuracy in measuring job satisfaction:
 
 ```{r, fig.height=10,fig.width=5, cache=TRUE}
 plot(varImp(epgc_mod_rf2))
 ```
+The variable importance plot clearly shows that an individuals’ salary perfectly predicts that individuals satisifaction with their job. While we expected salary to have an influence over an individual’s job satisfaction, we did not expect it to have as large of an influence as it does. The second and third predictive factors are age and race (X5), respectively. This model reveals that undergraduate loan amount is not a strong predictor of job satisfaction, as the first of the loan indicators appears in the 9th position. 
 
-With these variables identified, we measured [info about partial dependency plots...]
+Having identified the variables that are the strongest predictor of job satisfaction in the best performing machine learning model, we can now examine the relationship between these variables and the outcome. To do so, we use partial dependency plots, which graph the predictive power of each variable at different levels of the variable and the directional relationship between the variables. Partial dependency plots for salary, age, and race (X5) are shown below:
 ```{r,cache=TRUE}
 partial(epgc_mod_rf2, pred.var = "salary", plot = T)
 ```
-
+Salary is a strong and constant predictor of job satisfaction until really high levels of salary, at which point the predictive power falls away. 
 ```{r, cache=TRUE}
 partial(epgc_mod_rf2, pred.var = "age", plot = T)
 ```
@@ -867,19 +874,19 @@ partial(epgc_mod_rf2, pred.var = "age", plot = T)
 partial(epgc_mod_rf2, pred.var = "race_X5", plot = T)
 ```
 
-
-```{r}
+We checked the outcome of the random forest model by also testing the tuned K-Nearest Neighbor and tuned Regression Tree models. We wanted to see if perfect specificity was a quirk of the random forest model or if all the machine learning models leaned heavily on this predictive pattern. As it turns out, the output of the KNN and regression tree models are not significantly different than the RF model. The accuracy of both models is very similar to the RF model, yielding 87.6% and 87.7% accuracy, respectively.Similarly, both models had near perfect sensitivity and zero specificity.
+```{r, include=FALSE}
 pred <- predict(epgc_mod_knn2, newdata = epcg_test3)
 confusionMatrix(table(pred,epcg_test3$job_satisfaction))
 ```
 
-```{r}
+```{r, include=FALSE}
 pred_cart2 <- predict(epgc_mod_cart2, newdata = epcg_test3)
 confusionMatrix(table(pred_cart2,epcg_test3$job_satisfaction))
 
 ```
 
-
+Another way in which we tested this result was to increase the size of our sample. In the initial models and visualizations, we limited the sample to individuals younger than 36, as we predicted that recent trends in the cost of higher education were more likely to impact the millennial generation. Having discovered that the amount of loans a college graduate has does not help predict their level of job satisfaction, we determined it appropriate to expand the machine learning model to the entire sample. We did not find significantly different results using this larger sample. As it turns out, the percentage of individuals that report being satisfied with their job in the full sample is similar to the percentage in the original sample, and therefore the model acted in a similar fashion, with high accuracy, near perfect specificity, and almost no sensitivity. 
 ```{r, include=FALSE}
 epcg17_all <-  epcg17 %>% 
   filter(., ugloanr!="01" & emrg<10) %>% 
@@ -1028,7 +1035,9 @@ pred_rf2_all <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred_rf2_all,epcg_test3$job_satisfaction))
 ```
 
-New machine learning models using satisfaction with salary and career advancement as the outcomes of interest.
+Given that there appears to be very little variation in overall job satisfaction among respondents, we decided to examine other measures of job satisfaction. The survey also asked individuals how satisfied they are with specific aspects of their job. We chose to examine satisfaction with salary potential for career advancement. We examined salary satisfaction because of the importance of salary as a predictor of overall satisfaction in the first models, and potential for career advancement because we initially hypothesized that recent graduates may take the first job offer they receive, which could limit the individual’s potential for further advancement opportunities if they are not fully invested in their position. 
+
+For both of these outcomes, we chose to just run the tuned random forest model, given that it was the most effective model in the original analysis. The results from the career advancement model followed a similar pattern as the original analyses, though with lower accuracy. The results from the salary satisfaction analysis are more interesting. 
 ```{r, include=FALSE}
 epcg_ml_sal <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary, 
                   "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
@@ -1175,12 +1184,13 @@ pred_rf2_adv <- predict(epgc_mod_rf2, newdata = epcg_test3)
 confusionMatrix(table(pred_rf2_adv,epcg_test3$adv_satisfaction))
 ```
  
-```{r, include=FALSE}
+```{r}
 # Variable Importance Plot: Career Advancement Satisfaction
 plot(varImp(epgc_mod_rf2))
 ```
 
-```{r}
+```{r, include=FALSE}
 options(tinytex.verbose = TRUE)
 ```
 
+# Conclusion

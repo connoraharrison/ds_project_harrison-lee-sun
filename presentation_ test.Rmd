@@ -27,29 +27,38 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Problem statement and background
 
-- Less studies focus on the effects of the level of students loans debt has on students’ post-graduation decision-making
+- Studies have shown that student debt impacts life decisions
 
-- We hypothesize that high levels of student loan debt have negative effects on employment outcomes for recent graduates
+- Student debt may pressure and lead to job mismatches
+
+- Hypothesis: high levels of student loan debt have negative impacts on employment outcomes
 
 ## Research design and approach
 
-- Dataset: National Survey of College Graduates (NSCG)
-
 - Goals
+
 1. Data visualization: to test any trends or relationships between variables of interest
+
 2. Machine learning: to find the best predictor for the overall job satisfaction
 
-## Methods / tools
+## Methods / Tools
+
+- Dataset: National Survey of College Graduates (NSCG)
 
 - Data Visualization 
-1. recode variables
-2. create new indicators
-3. group variables 
+1. Job satisfaction over Loan Amounts (Region and Race)
+2. Comparison of job satisfaction aspects
+3. Distribution of job satisfaction responses by salary and age groups
+
+## Methods / Tools
+
 - Machine Learning 
+1.
+2.
+3.
 
 
-
-## Slide with Plot
+## Results - Visualization
 
 ```{r pressure}
 plot(pressure)

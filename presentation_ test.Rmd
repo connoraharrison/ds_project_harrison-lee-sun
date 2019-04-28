@@ -1,10 +1,11 @@
 ---
 title: "Predicting job mismatch through analyzing overall job satisfaction"
-author: "Harri-Lee-Sun"
+author: "Harri-Lee-Sun" 
 date: "2019/4/27"
 output:
   ioslides_presentation:
-    smaller: true
+    incremental: true
+    widescreen: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +13,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 
-## Problem statement and background ##
+## Problem statement and background
 
 - The upward trend of the cost of higher education has not been accompanied by an upward increase in incomes
 
@@ -20,7 +21,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 - We hypothesize that high levels of student loan debt have negative effects on employment outcomes for recent graduates
 
-## Research design and approach ##
+## Research design and approach
 
 - Dataset: National Survey of College Graduates (NSCG)
 
@@ -28,7 +29,7 @@ knitr::opts_chunk$set(echo = FALSE)
 1. Data visualization: to test any trends or relationships between variables of interest
 2. Machine learning: to find the best predictor for the overall job satisfaction
 
-## Methods / tools ##
+## Methods / tools
 
 - Data Visualization 
 1. recode variables

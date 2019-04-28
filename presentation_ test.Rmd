@@ -1,61 +1,270 @@
 ---
-title: "test"
-author: "haorui"
-date: "2019/4/15"
-output: pdf_document
+title: "Predicting job mismatch through analyzing overall job satisfaction"
+author: "Harri-Lee-Sun"
+date: "2019/4/27"
+output:
+  ioslides_presentation:
+    incremental: yes
+    widescreen: yes
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Problem statement and background
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+- The cost of higher education has increased but incomes hasn't
 
-```{r cars}
-summary(cars)
+- Student debt has also increased significantly
+
+- Student loan debt in 2018: $1.5 trillion
+
+- Graduating class of 2016 has average of $37,000 student loan.
+
+## Problem statement and background
+
+- Studies have shown that student debt impacts life decisions
+
+- Student debt may pressure and lead to job mismatches
+
+- Hypothesis: high levels of student loan debt have negative impacts on employment outcomes
+
+## Research design and approach
+
+- Goals
+
+1. Data visualization: to test any trends or relationships between variables of interest
+
+2. Machine learning: to find the best predictor for the overall job satisfaction
+
+## Methods / Tools
+
+- Dataset: National Survey of College Graduates (NSCG)
+
+- Data Visualization 
+1. Job satisfaction over Loan Amounts (Region and Race)
+2. Comparison of job satisfaction aspects
+3. Distribution of job satisfaction responses by salary and age groups
+
+## Methods / Tools
+
+- Machine Learning 
+1.
+2.
+3.
+
+
+## Results - Visualization 1
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+# Load Packages
+library(haven)
+library(tidyverse)
+library(caret)
+library(recipes)
+library(pdp)
+library(skimr)
+library(foreach)
+library(pastecs)
+library(ggplot2)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r, include=FALSE}
+## Data Wrangling - Won't be included in the knit pdf output.
+## filtering by age, selecting variables of interest, creating key indicators
+epcg17 <- read_dta("epcg17.dta")
+epcg17_new <-  epcg17 %>% 
+  filter(., age<36 & bast=="099" & bayr>1975 & ugloanr!="01" & emrg<10) %>% 
+  # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
+  select(age, racethm, ugloanr, gender, grloanr, hcapin,
+         #degree information, second to fifth highest degrees, highest degree, most recent degree
+         d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
+         #primary/secondary work activity, public/private status of undergrad institution, year ba received
+         actcap:acttch, bapbpr, bayr,
+         # reason for changing employer
+         chchg:chloc, chot:chsch,
+         # visa type for non-US citizen, year highest degree awarded, father and mother's education level
+         ctzfor, dgryr, eddad, edmom,
+         #region code for employer, employer type, employer size, detailed employer sector, 
+         emrg, emtp, emsize, emsecdt, emsecsm, facadv:facsoc,
+         # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status
+         hrswk, jobins:jobproft, jobvac, jobsatis, lfstat, lookwk, marsta,
+         # job code for last job, job code for principal job, field of study of BA degree, employer type
+         n2ocmlst, n2ocprmg, nbamed, nedtp,
+         # reasons for working outside field of highest degree, most important reason for working outside field
+         nrchg:nrpay, nrrea,
+         # reasons for not working, extent job is related to highest degree, reason worked part-time
+         nwfam:nwstu, ocedrlp, pjfam:pjstu,
+         # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
+         resploc, salary, satadv:satsoc, spowk, strtyr,
+         # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
+         ugower, grower, vetstat) %>% 
+  # creating gender and race indicators
+  mutate(., female = ifelse(gender=="F", 1,0)) %>% 
+  mutate(., race_white = ifelse(racethm=="5",1,0 )) %>% 
+  mutate(., race_black = ifelse(racethm=="3",1,0 )) %>% 
+  mutate(., race_hispanic = ifelse(racethm=="4",1,0 )) %>%
+  mutate(., race_asian = ifelse(racethm=="1",1,0 )) %>%
+  mutate(., race_other = ifelse(racethm=="2" | racethm=="6" | racethm=="7", 1,0)) %>% 
+  # replacing 9999998 to NA for salary variable
+  mutate(., salary= ifelse(salary==9999998, NA, salary)) %>% 
+  # bachelor degree indicator
+  mutate(., bachelor_degree= ifelse(mrdg=="1", 1,
+                                    ifelse(dgrdg=="1", 1,
+                                           ifelse(d2dg=="1", 1,
+                                                  ifelse(d3dg=="1", 1,
+                                                         ifelse(d4dg=="1",1,
+                                                                ifelse(d5dg=="1", 1, 0))))))) %>%
+  # master's degree indicator
+  mutate(., master_degree= ifelse(mrdg=="2", 1,
+                                    ifelse(dgrdg=="2", 1,
+                                           ifelse(d2dg=="2", 1,
+                                                  ifelse(d3dg=="2", 1,
+                                                         ifelse(d4dg=="2",1,
+                                                                ifelse(d5dg=="2", 1, 0))))))) %>%
+  mutate(., doctorate_degree= ifelse(mrdg=="3", 1,
+                                    ifelse(dgrdg=="3", 1,
+                                           ifelse(d2dg=="3", 1,
+                                                  ifelse(d3dg=="3", 1,
+                                                         ifelse(d4dg=="3",1,
+                                                                ifelse(d5dg=="3", 1, 0))))))) %>%
+  # professional degree
+  mutate(., professional_degree= ifelse(mrdg=="4", 1,
+                                    ifelse(dgrdg=="4", 1,
+                                           ifelse(d2dg=="4", 1,
+                                                  ifelse(d3dg=="4", 1,
+                                                         ifelse(d4dg=="4",1,
+                                                                ifelse(d5dg=="4", 1, 0))))))) %>%
+  mutate(.,satadv_satisfied = if_else(satadv=="1" | satadv =="2", 1, 0)) %>% 
+  mutate(.,satben_satisfied = if_else(satben=="1" | satben =="2", 1, 0)) %>%
+  mutate(.,satsal_satisfied = if_else(satsal=="1" | satsal =="2", 1, 0)) %>%
+  mutate(.,satsec_satisfied = if_else(satsec=="1" | satsec =="2", 1, 0)) %>%
+  mutate(.,satresp_satisfied = if_else(satresp=="1" | satresp =="2", 1, 0)) %>% 
+  mutate(.,job_satisfied = if_else(jobsatis=="1" | jobsatis =="2", 1, 0))
+head(epcg17_new)
+table(epcg17_new$ugloanr)
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
-data <- read.csv(file.choose())
-data$edmom <- as.factor(data$edmom)
-levels(data$edmom) <- c("Less than high school completed", "High school diploma or equivalent", "Some college, vocational, or trade school", "Bachelors degree", "Masters degree", "Professional degree", "Doctorate", "Not applicable")
-data$racem <- as.factor(data$racem)
-levels(data$racem) <- c("Asian", "AI_AN", "Black", "White", "NH_OPI", "MR")
-library(ggplot2)
-library(tidyverse)
+## Visual 2
+# data set creation for the visual 2
+dataforplot2 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  select(., ugloanr,satadv_satisfied:satresp_satisfied,job_satisfied,emrg) %>% 
+  mutate(.,obscount=1) %>%
+  mutate(.,ugloanr_group=ifelse(as.numeric(ugloanr)==2, 1,
+                                ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
+                                       ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
+                                              ifelse(as.numeric(ugloanr)>8 &  as.numeric(ugloanr)<12,4,5))))) %>%
+  group_by(.,ugloanr_group, emrg) %>% 
+  summarize(.,mean_job_sat=mean(job_satisfied),
+            obscount=sum(obscount)) %>% 
+  mutate(.,emrg_char=ifelse(emrg=="01","New England",
+                            ifelse(emrg=="02", "Middle Atlantic",
+                                   ifelse(emrg=="03", "East North Central",
+                                          ifelse(emrg=="04", "West North Central",
+                                                 ifelse(emrg=="05", "South Central",
+                                                        ifelse(emrg=="06", "East South Central",
+                                                               ifelse(emrg=="07", "West South Central",
+                                                                      ifelse(emrg=="08", "Mountain", "Pacific and US Territories"))))))))) %>% 
+  filter(., obscount>=50) %>% 
+  mutate(.,emrg_factor=factor(emrg_char, c("New England", "Middle Atlantic", "East North Central", "West North Central",
+                                            "South Central", "East South Central", "West South Central",
+                                            "Mountain", "Pacific and US Territories"))) %>%
+  mutate(.,mean_job_sat_100 = mean_job_sat * 100)
 
-png("~/Desktop/plot.png",width=1000,height=800)
-ggplot(data = data, aes(x = edmom, y = ugloanr, fill = edmom)) +
-       geom_bar(stat = "identity") + 
-       theme(plot.margin = unit(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "cm")) +
-       coord_flip() +
-       scale_y_reverse() +
-       scale_x_reverse(breaks=c(1:8))  
-       labels(c("Less than high school completed", "High school diploma or equivalent", "Some college", "Bachelors degree", "Masters degree", "Professional degree", "Doctorate", "Not applicable")) +
-       geom_text(aes(label = round(ugloanr_pct,0)))
-       position = position_stack(vjust = 0.5) +
-         labs(title ="Undergraduate Loan Amount of Millenials by Father's Edcuation Level")+
-         theme(axis.title.x = element_blank(),
-               axis.title.y = element_blank(),
-               axis.ticks.x = element_blank(),
-               axis.ticks.y = element_blank(),
-               axis.text.x = element_blank(),
-               panel.background = element_blank(),
-               strip.background = element_blank(),
-               legend.position = c(0.8, 0.3))+
-         facet_wrap(~data$racem)
+# ggplot code for visual 2
+ggplot(dataforplot2, aes(x=emrg_factor, y=mean_job_sat_100, color=as.character(ugloanr_group), group=as.character(ugloanr_group))) +
+  geom_point(size=3.5, alpha=.8) +
+  geom_text(aes(label=round(mean_job_sat_100,0)), size=4, vjust = -.8, nudge_y = 0.05) +
+  scale_color_manual(name = "Undergrad Loan Amount",
+                     values = c("1"="yellowgreen", "2"="yellow3", "3"="orange1", "4"="orangered1", "5" = "red4"),
+                     labels = c("1"="$0", "2"="$1-30,000", "3"="$30,001-60,000", "4"="$60,001-90,000", "5" = "More than $90,000")) +
+  labs(title ="Figure 2. Percent Satisfied with Job by Undergraduate Loan Amount and Region of Employer",
+       caption = "Data: National Survey of College Graduates") +
+  coord_flip() +
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major.y =element_line(colour = "grey", size = 0.5))
+
 ```
+
+## Results - Visualization 1
+
+- 
+
+## Results - Visualization
+# Visual 4 data preparation
+dataforplot4 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  select(., ugloanr,emrg, satadv_satisfied:satresp_satisfied, job_satisfied) %>% 
+  mutate(.,obscount=1) %>%
+  mutate(.,ugloanr_group=ifelse(as.numeric(ugloanr)==2, 1,
+                                ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
+                                       ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
+                                              ifelse(as.numeric(ugloanr)>8 & as.numeric(ugloanr)<12,4,5))))) %>%
+  group_by(.,ugloanr_group, emrg) %>%
+  summarize(., mean1=mean(satadv_satisfied),
+            mean2=mean(satben_satisfied), mean3=mean(satsal_satisfied),
+            mean4=mean(satsec_satisfied), mean5=mean(satresp_satisfied),
+            mean6=mean(job_satisfied), obscount=sum(obscount)) %>%
+  filter(., obscount>=50) %>% 
+  ungroup(.,ugloanr_group, emrg) %>% 
+  gather(., key, value,mean1:mean6) %>% 
+  mutate(.,emrg_char=ifelse(emrg=="01","New England",
+                            ifelse(emrg=="02", "Middle Atlantic",
+                                   ifelse(emrg=="03", "East North Central",
+                                          ifelse(emrg=="04", "West North Central",
+                                                 ifelse(emrg=="05", "South Central",
+                                                        ifelse(emrg=="06", "East South Central",
+                                                               ifelse(emrg=="07", "West South Central",
+                                                                      ifelse(emrg=="08", "Mountain", "Pacific and US Territories"))))))))) %>% 
+  mutate(.,emrg_factor=factor(emrg_char, c("New England", "Middle Atlantic", "East North Central", "West North Central",
+                                           "South Central", "East South Central", "West South Central",
+                                           "Mountain", "Pacific and US Territories"))) %>% 
+  mutate(.,satisfaction_type=ifelse(key=="mean1","Career Advancement",
+                                    ifelse(key=="mean2", "Benefits",
+                                           ifelse(key=="mean3", "Salary",
+                                                  ifelse(key=="mean4", "Job Security",
+                                                         ifelse(key=="mean5", "Responsibility", "Job - Overall")))))) %>% 
+  mutate(.,mean100=value*100)
+
+## Visual 4
+ggplot(dataforplot4, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
+  geom_point() +
+  geom_line(size=1.3, alpha=.6) +
+  facet_wrap(~emrg_factor) +
+  scale_color_brewer(name="Satisfaction Category",
+                     type="qual",
+                     palette="Set1") +
+  scale_x_discrete(labels = c("1"="$0", "2"="$1-30K", "3"="$30k-60k", "4"="$60k-90k", "5" = "More than $90k")) +
+  scale_y_continuous(limits = c(60, 100),breaks = seq(60, 100, 10)) +
+  labs(title ="Figure 4. Types of Job Satisfaction by Undergraduate Loan Amounts and by Region",
+       caption = "Data: National Survey of College Graduates",
+       y = "Percent Satisfied") +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major.y =element_line(colour = "grey", size = 0.5),
+        axis.text.x = element_text(size=8, angle=20))
+```
+
+
+
+
+
+
+
+
+

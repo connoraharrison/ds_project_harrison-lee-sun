@@ -15,6 +15,7 @@ library(recipes)
 library(pdp)
 library(foreach)
 library(pastecs)
+library(tinytex)
 ```
 
 ```{r, include=FALSE}
@@ -1177,5 +1178,9 @@ confusionMatrix(table(pred_rf2_adv,epcg_test3$adv_satisfaction))
 ```{r, include=FALSE}
 # Variable Importance Plot: Career Advancement Satisfaction
 plot(varImp(epgc_mod_rf2))
+```
+
+```{r}
+options(tinytex.verbose = TRUE)
 ```
 

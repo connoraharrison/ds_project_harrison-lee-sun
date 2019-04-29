@@ -1,0 +1,17 @@
+base
+haven
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+lattice
+caret
+recipes
+pdp
+foreach
+pastecs

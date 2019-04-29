@@ -254,7 +254,7 @@ ggplot(dataforplot3, aes(x=racethm_factor, y=mean_job_sat_100, color=as.characte
         strip.background = element_blank(),
         panel.grid.major.y =element_line(colour = "grey", size = 0.5))
 ```
-Figure 4 through 8 are showing the changes in satisfaction levels over loan amounts by various characteristics of the respondents. Overall, these visualizations did not show a singular relationship between undergraduate loan amounts and satisfaction levels. Some analysis groups showed almost no change in the satisfaction levels with increasing loan amounts, whereas others showed random spikes or dips in the satisfaction levels. However, a quadratic relationship that was also noted in Figure 2 was also observed in several of the analysis groups, suggesting that a non-linear relationship between loan amounts and satisfaction levels.
+Figure 4 through 7 are showing the changes in satisfaction levels over loan amounts by various characteristics of the respondents. Overall, these visualizations did not show a singular relationship between undergraduate loan amounts and satisfaction levels. Some analysis groups showed almost no change in the satisfaction levels with increasing loan amounts, whereas others showed random spikes or dips in the satisfaction levels. However, a quadratic relationship that was also noted in Figure 2 was also observed in several of the analysis groups, suggesting that a non-linear relationship between loan amounts and satisfaction levels.
 
 Satisfactions in the job, security, and responsibility were the highest among all job satisfaction categories and they aligned with each other in terms of satisfaction levels and degree of change. Few of the plots, such as the plot for New England region, university jobs, and federal and state jobs, had one of the three satisfaction categories diverge off from each other. Regardless of these few exceptions, these figures seem to suggest that there is a high correlation among overall, security, and responsibility at the job.
 
@@ -368,61 +368,12 @@ ggplot(dataforplot5, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
         axis.text.x = element_text(size=8, angle=20))
 ```
 
+
+
 ```{r}
-# Visual #6
-# Visual 6 data preparation
+
+##Visual 6
 dataforplot6 <- epcg17_new %>%
-  filter(., jobsatis!="L") %>%
-  select(., ugloanr,dgrdg, satadv_satisfied:satresp_satisfied, job_satisfied) %>% 
-  mutate(.,obscount=1) %>%
-  mutate(.,ugloanr_group=ifelse(as.numeric(ugloanr)==2, 1,
-                                ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
-                                       ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
-                                              ifelse(as.numeric(ugloanr)>8 & as.numeric(ugloanr)<12,4,5))))) %>%
-  group_by(.,ugloanr_group, dgrdg) %>%
-  summarize(., mean1=mean(satadv_satisfied),
-            mean2=mean(satben_satisfied), mean3=mean(satsal_satisfied),
-            mean4=mean(satsec_satisfied), mean5=mean(satresp_satisfied),
-            mean6=mean(job_satisfied), obscount=sum(obscount)) %>%
-  filter(., obscount>=50) %>% 
-  ungroup(.,ugloanr_group, dgrdg) %>% 
-  gather(., key, value,mean1:mean6) %>% 
-  mutate(.,dgrdg_char=ifelse(dgrdg=="1","Bachelor",
-                            ifelse(dgrdg=="2", "Master",
-                                   ifelse(dgrdg=="3", "Doctorate", "Professional")))) %>% 
-  mutate(.,dgrdg_factor=factor(dgrdg_char, c("Bachelor", "Master", "Doctorate", "Professional"))) %>% 
-  mutate(.,satisfaction_type=ifelse(key=="mean1","Career Advancement",
-                                    ifelse(key=="mean2", "Benefits",
-                                           ifelse(key=="mean3", "Salary",
-                                                  ifelse(key=="mean4", "Job Security",
-                                                         ifelse(key=="mean5", "Responsibility", "Job - Overall")))))) %>% 
-  mutate(.,mean100=value*100)
-
-## Visual 6
-ggplot(dataforplot6, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
-  geom_point() +
-  geom_line(size=1.3, alpha=.6) +
-  facet_wrap(~dgrdg_factor) +
-  scale_color_brewer(name="Satisfaction Category",
-                     type="qual",
-                     palette="Set1") +
-  scale_x_discrete(labels = c("1"="$0", "2"="$1-30K", "3"="$30k-60k", "4"="$60k-90k", "5" = "More than $90k")) +
-  scale_y_continuous(limits = c(60, 100),breaks = seq(60, 100, 10)) +
-  labs(title ="Figure 6. Types of Job Satisfaction by Undergraduate Loan Amounts and Highest Degree",
-       caption = "Data: National Survey of College Graduates",
-       y = "Percent Satisfied") +
-  theme(axis.title.x = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.background = element_blank(),
-        strip.background = element_blank(),
-        panel.grid.major.y =element_line(colour = "grey", size = 0.5),
-        axis.text.x = element_text(size=8, angle=20))
-```
-
-```{r}
-
-##Visual 7
-dataforplot7 <- epcg17_new %>%
   filter(., jobsatis!="L") %>%
   select(., ugloanr,emsecdt, satadv_satisfied:satresp_satisfied, job_satisfied) %>% 
   mutate(.,obscount=1) %>%
@@ -451,7 +402,7 @@ dataforplot7 <- epcg17_new %>%
                                                          ifelse(key=="mean5", "Responsibility", "Job - Overall")))))) %>% 
   mutate(.,mean100=value*100)
 
-ggplot(dataforplot7, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
+ggplot(dataforplot6, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
   geom_point() +
   geom_line(size=1.3, alpha=.6) +
   facet_wrap(~emsecdt_factor) +
@@ -460,7 +411,7 @@ ggplot(dataforplot7, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
                      palette="Set1") +
   scale_x_discrete(labels = c("1"="$0", "2"="$1-30K", "3"="$30k-60k", "4"="$60k-90k", "5" = "More than $90k")) +
   scale_y_continuous(limits = c(60, 100),breaks = seq(60, 100, 10)) +
-  labs(title ="Figure 7. Types of Job Satisfaction by Undergraduate Loan Amounts and by Job Sector",
+  labs(title ="Figure 6. Types of Job Satisfaction by Undergraduate Loan Amounts and by Job Sector",
        caption = "Data: National Survey of College Graduates",
        y = "Percent Satisfied") +
   theme(axis.title.x = element_blank(),
@@ -474,8 +425,8 @@ ggplot(dataforplot7, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
 ```
 ```{r}
 
-##Visual 8
-dataforplot8 <- epcg17_new %>%
+##Visual 7
+dataforplot7 <- epcg17_new %>%
   filter(., jobsatis!="L") %>%
   select(., ugloanr,emsize, satadv_satisfied:satresp_satisfied, job_satisfied) %>% 
   mutate(.,obscount=1) %>%
@@ -506,7 +457,7 @@ dataforplot8 <- epcg17_new %>%
                                                                        ifelse(emsize=="7", "5000-24999","25000+")))))))) %>%
   mutate(.,emsize_factor=factor(emsize_c, c("10 or fewer","11-24","25-99","100-499","500-999","1000-4999","5000-24999","25000+")))
 
-ggplot(dataforplot8, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
+ggplot(dataforplot7, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
   geom_point() +
   geom_line(size=1.3, alpha=.6) +
   facet_wrap(~emsize_factor) +
@@ -515,7 +466,7 @@ ggplot(dataforplot8, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
                      palette="Set1") +
   scale_x_discrete(labels = c("1"="$0", "2"="$1-30K", "3"="$30k-60k", "4"="$60k-90k", "5" = "More than $90k")) +
   scale_y_continuous(limits = c(40, 100),breaks = seq(40, 100, 20)) +
-  labs(title ="Figure 8. Types of Job Satisfaction by Undergraduate Loan Amounts and by Employee Size",
+  labs(title ="Figure 7. Types of Job Satisfaction by Undergraduate Loan Amounts and by Employee Size",
        caption = "Data: National Survey of College Graduates",
        y = "Percent Satisfied") +
   theme(axis.title.x = element_blank(),
@@ -527,9 +478,7 @@ ggplot(dataforplot8, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
 
 
 ```
-In figures 9 and 10, we created bar charts to show the distribution of the responses for job satisfaction questionnaire over salary and age groups. The percent of satisfied and very satisfied responses increased with increasing salary amounts and age. However, the changes were very small and, therefore, difficult to be claimed as meaningful.
-
-Through this visual analysis method, we found few patterns that suggested quadratic relationships between our dependent and independent variables. However, the satisfaction levels were generally very high (around 85%) and had small variations in them, which meant that there was little room for meaningful variations to be observed. And because this analysis is limited to three variables at a time, these relationships cannot be interpreted as casual or definitive as there could be omitted variable bias that is affecting the relationships observed.
+In figures 9, we created bar charts to show the distribution of the responses for job satisfaction and salary satisfaction questionnaires by salary groups. The percent of "satisfied"" and "very satisfied"" responses increased with increasing salary amount. However, the changes were very small for the overall job satisfaction questionnaire and, therefore, difficult to be claimed as meaningful. On the other hand, responses for the salary satisfaction questionnaire showed more variations over the same salary groups and observe that satisfaction increase steeply in the lower salary ranges, but levels out when the salary exceeds $100,000.  
 
 ```{r}
 
@@ -559,7 +508,7 @@ dataforplot9_1 <- epcg17_new %>%
   mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
   mutate(.,salary_factor=factor(salary_range, c("$0", "$1-30K","$30K-60K","$60K-100K","$100K-150K",">$150K"))) %>% 
   mutate(.,value100=value*100) %>% 
-  mutate(.,satis_type="Job - Overall")
+  mutate(.,satis_type="Job - Overall Satisfaction")
 
 dataforplot9_2 <- epcg17_new %>%
   filter(., jobsatis!="L") %>%
@@ -586,7 +535,7 @@ dataforplot9_2 <- epcg17_new %>%
   mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
   mutate(.,salary_factor=factor(salary_range, c("$0", "$1-30K","$30K-60K","$60K-100K","$100K-150K",">$150K"))) %>% 
   mutate(.,value100=value*100) %>% 
-  mutate(.,satis_type="Salary")
+  mutate(.,satis_type="Salary Satisfaction")
 
 dataforplot9 <- bind_rows(dataforplot9_1, dataforplot9_2)
   
@@ -610,52 +559,8 @@ ggplot(dataforplot9,aes(x=salary_factor, y=value100,fill=satis_level_factor)) +
 
 ```
 
-```{r}
+Through this visual analysis method, we found few patterns that suggest quadratic relationships between our dependent and independent variables. However, the satisfaction levels were generally very high (around 85%) and had small variations within them, which meant that there was small room for meaningful variations to be observed. And because this analysis is limited to maximum of three variables at a time, these relationships cannot be interpreted as casual or definitive as there could be omitted variable bias that is affecting the relationships observed.
 
-##Visual 10
-dataforplot10 <- epcg17_new %>%
-  filter(., jobsatis!="L") %>%
-  mutate(.,age_range=ifelse(age<25, "Younger than 24",
-                               ifelse(age > 24 & age <=27, "25-27",
-                                      ifelse(age > 27 & age <=30, "28-30",
-                                             ifelse(age > 30 & age <=33, "31-33", "33+"))))) %>%
-  mutate(.,job_verysatisfied=ifelse(jobsatis=="1",1,0)) %>% 
-  mutate(.,job_satisfied=ifelse(jobsatis=="2",1,0)) %>% 
-  mutate(.,job_dissatisfied=ifelse(jobsatis=="3",1,0)) %>% 
-  mutate(.,job_verydissatisfied=ifelse(jobsatis=="4",1,0)) %>% 
-  mutate(.,obscount=1) %>% 
-  group_by(.,age_range) %>% 
-  summarize(., mean1=mean(job_verysatisfied),
-            mean2=mean(job_satisfied),
-            mean3=mean(job_dissatisfied),
-            mean4=mean(job_verydissatisfied),
-            obscount=sum(obscount)) %>% 
-  gather(., key, value,mean1:mean4) %>% 
-  mutate(.,satis_level=ifelse(key=="mean1","Very Satisfied",
-                              ifelse(key=="mean2", "Satisfied",
-                                     ifelse(key=="mean3", "Dissatisfied","Very Dissatisfied")))) %>%
-  mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
-  mutate(.,age_factor=factor(age_range, c("Younger than 24", "25-27", "28-30", "31-33", "33+"))) %>% 
-  mutate(.,value100=value*100)
-  
-
-ggplot(dataforplot10,aes(x=age_factor, y=value100,fill=satis_level_factor)) +
-  geom_bar(stat="identity") +
-  geom_text(aes(label=round(value100,0)), position=position_stack(vjust=0.5)) +
-  labs(title ="Figure 10. Job Satisfaction by Age Groups",
-       caption = "Data: National Survey of College Graduates",
-       y = "Percent") +
-  scale_fill_brewer(name="Satisfaction Level",
-                    type="div",
-                    palette="RdBu",
-                    direction = -1) +
-  theme(axis.title.x = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.background = element_blank(),
-        strip.background = element_blank(),
-        axis.text.x = element_text(size=8))
-
-```
 # Using Machine Learning to Identify Predictors of Job and Salary Satisfaction
 Now that we've identified the primary variables that can potentially influence job and salary satisfaction, we can use machine learning to predict which outcomes and characteristics of recent graduates influence these outcomes. 
 
@@ -1201,3 +1106,103 @@ options(tinytex.verbose = TRUE)
 ```
 
 # Conclusion
+
+# Appendix
+
+```{r}
+# Visual #A1
+# Visual A1 data preparation
+dataforplotA1 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  select(., ugloanr,dgrdg, satadv_satisfied:satresp_satisfied, job_satisfied) %>% 
+  mutate(.,obscount=1) %>%
+  mutate(.,ugloanr_group=ifelse(as.numeric(ugloanr)==2, 1,
+                                ifelse(as.numeric(ugloanr)>2 & as.numeric(ugloanr)<6,2,
+                                       ifelse(as.numeric(ugloanr)>5 & as.numeric(ugloanr)<9, 3,
+                                              ifelse(as.numeric(ugloanr)>8 & as.numeric(ugloanr)<12,4,5))))) %>%
+  group_by(.,ugloanr_group, dgrdg) %>%
+  summarize(., mean1=mean(satadv_satisfied),
+            mean2=mean(satben_satisfied), mean3=mean(satsal_satisfied),
+            mean4=mean(satsec_satisfied), mean5=mean(satresp_satisfied),
+            mean6=mean(job_satisfied), obscount=sum(obscount)) %>%
+  filter(., obscount>=50) %>% 
+  ungroup(.,ugloanr_group, dgrdg) %>% 
+  gather(., key, value,mean1:mean6) %>% 
+  mutate(.,dgrdg_char=ifelse(dgrdg=="1","Bachelor",
+                            ifelse(dgrdg=="2", "Master",
+                                   ifelse(dgrdg=="3", "Doctorate", "Professional")))) %>% 
+  mutate(.,dgrdg_factor=factor(dgrdg_char, c("Bachelor", "Master", "Doctorate", "Professional"))) %>% 
+  mutate(.,satisfaction_type=ifelse(key=="mean1","Career Advancement",
+                                    ifelse(key=="mean2", "Benefits",
+                                           ifelse(key=="mean3", "Salary",
+                                                  ifelse(key=="mean4", "Job Security",
+                                                         ifelse(key=="mean5", "Responsibility", "Job - Overall")))))) %>% 
+  mutate(.,mean100=value*100)
+
+## Visual A1
+ggplot(dataforplotA1, aes(x=as.character(ugloanr_group),y=mean100, color=satisfaction_type, group=satisfaction_type)) +
+  geom_point() +
+  geom_line(size=1.3, alpha=.6) +
+  facet_wrap(~dgrdg_factor) +
+  scale_color_brewer(name="Satisfaction Category",
+                     type="qual",
+                     palette="Set1") +
+  scale_x_discrete(labels = c("1"="$0", "2"="$1-30K", "3"="$30k-60k", "4"="$60k-90k", "5" = "More than $90k")) +
+  scale_y_continuous(limits = c(60, 100),breaks = seq(60, 100, 10)) +
+  labs(title ="Appendix 1. Types of Job Satisfaction by Undergraduate Loan Amounts and Highest Degree",
+       caption = "Data: National Survey of College Graduates",
+       y = "Percent Satisfied") +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major.y =element_line(colour = "grey", size = 0.5),
+        axis.text.x = element_text(size=8, angle=20))
+```
+
+```{r}
+
+##Visual A2
+dataforplotA2 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  mutate(.,age_range=ifelse(age<25, "Younger than 24",
+                               ifelse(age > 24 & age <=27, "25-27",
+                                      ifelse(age > 27 & age <=30, "28-30",
+                                             ifelse(age > 30 & age <=33, "31-33", "33+"))))) %>%
+  mutate(.,job_verysatisfied=ifelse(jobsatis=="1",1,0)) %>% 
+  mutate(.,job_satisfied=ifelse(jobsatis=="2",1,0)) %>% 
+  mutate(.,job_dissatisfied=ifelse(jobsatis=="3",1,0)) %>% 
+  mutate(.,job_verydissatisfied=ifelse(jobsatis=="4",1,0)) %>% 
+  mutate(.,obscount=1) %>% 
+  group_by(.,age_range) %>% 
+  summarize(., mean1=mean(job_verysatisfied),
+            mean2=mean(job_satisfied),
+            mean3=mean(job_dissatisfied),
+            mean4=mean(job_verydissatisfied),
+            obscount=sum(obscount)) %>% 
+  gather(., key, value,mean1:mean4) %>% 
+  mutate(.,satis_level=ifelse(key=="mean1","Very Satisfied",
+                              ifelse(key=="mean2", "Satisfied",
+                                     ifelse(key=="mean3", "Dissatisfied","Very Dissatisfied")))) %>%
+  mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
+  mutate(.,age_factor=factor(age_range, c("Younger than 24", "25-27", "28-30", "31-33", "33+"))) %>% 
+  mutate(.,value100=value*100)
+  
+
+ggplot(dataforplotA2,aes(x=age_factor, y=value100,fill=satis_level_factor)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label=round(value100,0)), position=position_stack(vjust=0.5)) +
+  labs(title ="Figure A2. Job Satisfaction by Age Groups",
+       caption = "Data: National Survey of College Graduates",
+       y = "Percent") +
+  scale_fill_brewer(name="Satisfaction Level",
+                    type="div",
+                    palette="RdBu",
+                    direction = -1) +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        axis.text.x = element_text(size=8))
+
+```

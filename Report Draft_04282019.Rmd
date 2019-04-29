@@ -5,6 +5,25 @@ date: "April 28, 2019"
 output: pdf_document
 ---
 
+#Problem statement and background
+
+One of the most prominent issues in contemporary American society is the rising cost of higher education. Between 1988 and 2018, the average cost of attending a 4-year public university has increased from $3,190 to $9,970, an increase of 213 %. This trend is similar, though a smaller magnitude increase, for private universities, at 129%. However, this upward trend has not been accompanied by an upward increase in incomes; CPI adjusted incomes have increased by 13% over this same period. 
+
+This disparity between stagnating incomes and rising tuition costs has put higher education out of reach for many middle class families through their own financing. Conversely, the demand for higher education has grown dramatically as the financial and social benefits incurred from possession a bachelor’s degree have become more salient in the public eye. To facilitate the pursuit of higher education for children from middle class and low-income families, the U.S. Department of Education has begun offering grants and subsidized loans to students to make up the financing gap families cannot meet on their own. 
+
+This issue is not unknown; significant reporting has been done on the growing proportion of student loan debt to total debt held by U.S. families. The total student loan amount has reached $1.5 trillion in 2018 and this makes up 36% of non-housing debt, up from 24% in 2008. The average student from graduating class of 2016 has about $37,000 in student debt. And among 47 million Americans with student loan debt, 11.5% of student loans are 90 days or more delinquent or are in default. These numbers are worrisome by themselves, but the impacts of these loans on the life decisions are even more troubling.
+
+Few studies have reported the downstream effects that this level of debt has on students’ post-graduation decision-making. Some of the decisions affected by student debt include first home purchases, marriage and relationship patterns, and career decisions. For instance, students that graduate with significant student loan debt may feel pressure to take the first employment opportunity that they find because students must begin repaying their loans after they graduate. Given this shortened timeline, students’ skills may be the best match to the position they acquire, resulting in a loss of employment efficiency. If easily acquired positions are not as high paying as jobs that students could acquire given a longer search timeline, students’ long-term earnings could be negatively affected, given that beginning salary is a strong indicator of lifelong earnings potential. Given these insights, we hypothesize that high levels of student loan debt have negative effects on employment outcomes for recent graduates; facing looming debt payments, new job market entrants may spend less time searching for the “right fit” job and instead be pressured into accepting an opportunity that is a less-than-perfect fit. 
+
+#Research design and approach 
+
+We used the National Survey of College Graduates (NSCG),  a biennial survey that gathers information on college degree field and post-graduation employment outcomes, to examine the the relationships between the student loan debt amount and job mismatch. However, there was no variable in this dataset that directly measure job match or mismatch and, therefore, we used the variable on job satisfaction as an outcome measure for job mismatch for college degree holders under age of 36.
+
+For the analysis, we began by selecting the variables of interest and re-coding them to fit our analysis methods. These variables we used to examine the relationships with the outcome measure are:  undergraduate loan amounts, race, age, gender, salary, employer's region, employee size, highest degree attained, and job sector.
+
+To answer the question of whether higher levels of students loan debt affect job satisfaction of college graduates, we used data visualizations to examine and test any trends or relationships between variables of interest. In terms of job satisfaction, we expected see whether those with little to none student debt have higher overall job satisfaction under the assumption that they are able to find jobs with better fits. Conversely, we also expected to see those with higher levels of student loan debt to have lower overall job satisfaction since they were unable to seek for better fit jobs. We also included satisfaction variables for different aspects of the job to compare with between overall satisfaction. With the machine learning analysis, our goal was to find the best predictor for the overall job satisfaction. In addition, we wanted to test whether the level of student loan amounts is one the stronger predictors of the outcome.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 # Load Packages
@@ -34,26 +53,14 @@ epcg17_new <-  epcg17 %>%
   select(age, racethm, ugloanr, gender, grloanr, hcapin,
          #degree information, second to fifth highest degrees, highest degree, most recent degree
          d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
-         #primary/secondary work activity, public/private status of undergrad institution, year ba received
-         actcap:acttch, bapbpr, bayr,
-         # reason for changing employer
-         chchg:chloc, chot:chsch,
-         # visa type for non-US citizen, year highest degree awarded, father and mother's education level
-         ctzfor, dgryr, eddad, edmom,
          #region code for employer, employer type, employer size, detailed employer sector, 
-         emrg, emtp, emsize, emsecdt, emsecsm, facadv:facsoc,
+         emrg, emtp, emsize, emsecdt, emsecsm,
          # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status
          hrswk, jobins:jobproft, jobvac, jobsatis, lfstat, lookwk, marsta,
          # job code for last job, job code for principal job, field of study of BA degree, employer type
          n2ocmlst, n2ocprmg, nbamed, nedtp,
-         # reasons for working outside field of highest degree, most important reason for working outside field
-         nrchg:nrpay, nrrea,
-         # reasons for not working, extent job is related to highest degree, reason worked part-time
-         nwfam:nwstu, ocedrlp, pjfam:pjstu,
          # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
-         resploc, salary, satadv:satsoc, spowk, strtyr,
-         # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
-         ugower, grower, vetstat) %>% 
+         resploc, salary, satadv:satsoc, spowk, strtyr)
   # creating gender and race indicators
   mutate(., female = ifelse(gender=="F", 1,0)) %>% 
   mutate(., race_white = ifelse(racethm=="5",1,0 )) %>% 
@@ -247,11 +254,11 @@ ggplot(dataforplot3, aes(x=racethm_factor, y=mean_job_sat_100, color=as.characte
         strip.background = element_blank(),
         panel.grid.major.y =element_line(colour = "grey", size = 0.5))
 ```
-Figure 4 through 8 are showing the changes in satisfaction levels over loan amounts by various characteristics of the respondents. Overall, these visualizations did not show a singular relationship between undergraduate loan amounts and satisfaction levels. Some analysis groups showed almost no change in satisfaction levels with increasing loan amounts, whereas others showed random spikes or dips in the satisfaction levels. However, a quadratic relationship that was also noted in Figure 2 was also observed in several of the analysis groups, suggesting that a non-linear relationship between loan amounts and satisfaction levels.
+Figure 4 through 8 are showing the changes in satisfaction levels over loan amounts by various characteristics of the respondents. Overall, these visualizations did not show a singular relationship between undergraduate loan amounts and satisfaction levels. Some analysis groups showed almost no change in the satisfaction levels with increasing loan amounts, whereas others showed random spikes or dips in the satisfaction levels. However, a quadratic relationship that was also noted in Figure 2 was also observed in several of the analysis groups, suggesting that a non-linear relationship between loan amounts and satisfaction levels.
 
 Satisfactions in the job, security, and responsibility were the highest among all job satisfaction categories and they aligned with each other in terms of satisfaction levels and degree of change. Few of the plots, such as the plot for New England region, university jobs, and federal and state jobs, had one of the three satisfaction categories diverge off from each other. Regardless of these few exceptions, these figures seem to suggest that there is a high correlation among overall, security, and responsibility at the job.
 
-In some cases, we had satisfaction categories with generally lower levels to show higher satisfaction level than the overall satisfaction category as in the case of federal and state government jobs. In this group, the satisfaction levels for job benefits and security were noticeably higher than that of the overall satisfaction for all undergraduate loan amounts. That is an expected result considering that government jobs are well known for their job security and benefits. 
+In some cases, we had satisfaction categories with generally low levels of satisfaction to show higher satisfaction level than the overall satisfaction category as in the case of federal and state government jobs. In this group, the satisfaction levels for job benefits and security were noticeably higher than that of the overall satisfaction for all undergraduate loan amounts. That is an expected result considering that government jobs are well known for their job security and benefits. On the other hand, we also observed abnoramlly low levels of satisfaction found in some groups. For example, those with loan amounts of greater than $60,000 had one of the lowest career advancement satisfactions of around 50%. Also, self-employed workers reported unusually low satisfaction level in job security, whereas those working very small companies (less than 10 employees) showed very low satisfaction levels in benefits but high levels in responsibility. These cases suggested that characteristical differecnes of a job can lead to low satisfactions in only one or two aspects of the job and revealed limitations of understanding satisfaction and right fit of a job using a single measurement outcome.
 
 ```{r}
 # Visual 4 data preparation

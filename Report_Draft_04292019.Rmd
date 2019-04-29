@@ -1,7 +1,7 @@
 ---
 title: "Predicting Job Mismatch Rate Through Job Satisfaction - PPOL 670 Group Project"
 author: "Connor Harrison, Dong Hoon Lee, Haorui Sun"
-date: "April 28, 2019"
+date: "April 29, 2019"
 header-includes:
     - \usepackage{setspace}\doublespacing
 output: pdf_document
@@ -606,6 +606,8 @@ epcg_ml <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salar
 epcg_ml$job_satisfaction <- factor(epcg_ml$job_satisfaction, 
                                       levels = c(1, 0), 
                                       labels = c("Satisfied", "Not_Satisfied"))
+# Set Seed
+set.seed(123)  
 
 # Partition data into training and test
 index = createDataPartition(epcg_ml$job_satisfaction,p=.75,list=F) 

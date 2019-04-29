@@ -1,8 +1,10 @@
 ---
 title: "Predicting Job Mismatch from Job Satisfaction"
-author: "Harri-Lee-Sun"
-date: "2019/4/27"
+author: "Harrison-Lee-Sun"
+date: "2019/4/29"
 output:
+  slidy_presentation:
+    incremental: yes
   ioslides_presentation:
     incremental: yes
     widescreen: yes
@@ -53,10 +55,13 @@ knitr::opts_chunk$set(echo = FALSE)
 ## Methods / Tools
 
 - Machine Learning 
-1.
-2.
-3.
+1. Job Satisfaction - Recent Graduates
+2. Job Satisfaction - Full Sample
+3. Salary Satisfaction
+4. Career Advancement Satisfaction
 
+- 6 Models: K-Nearest Neighbor, Regression Tree, Random Forest
+  -With and without tuning parameters
 
 ## Results - Visualization 1
 
@@ -144,6 +149,7 @@ epcg17_new <-  epcg17 %>%
   mutate(.,satresp_satisfied = if_else(satresp=="1" | satresp =="2", 1, 0)) %>% 
   mutate(.,job_satisfied = if_else(jobsatis=="1" | jobsatis =="2", 1, 0))
 ```
+
 ```{r}
 ## Visual 2
 # data set creation for the visual 2
@@ -253,20 +259,512 @@ ggplot(dataforplot4, aes(x=as.character(ugloanr_group),y=mean100, color=satisfac
         axis.text.x = element_text(size=8, angle=20))
 ```
 
-## Results - Machine Learning
+## Results - Visualization 3
 ```{r}
+##Visual 9
+dataforplot9_1 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  mutate(.,salary_range=ifelse(salary==0, "$0",
+                               ifelse(salary>0 & salary <=30000, "$1-30K",
+                                      ifelse(salary>30000 & salary <=60000, "$30K-60K",
+                                             ifelse(salary>60000 & salary <=100000, "$60K-100K",
+                                                    ifelse(salary>100000 & salary <=150000, "$100K-150K",">$150K")))))) %>%
+  mutate(.,job_verysatisfied=ifelse(jobsatis=="1",1,0)) %>% 
+  mutate(.,job_satisfied=ifelse(jobsatis=="2",1,0)) %>% 
+  mutate(.,job_dissatisfied=ifelse(jobsatis=="3",1,0)) %>% 
+  mutate(.,job_verydissatisfied=ifelse(jobsatis=="4",1,0)) %>% 
+  mutate(.,obscount=1) %>% 
+  group_by(.,salary_range) %>% 
+  summarize(., mean1=mean(job_verysatisfied),
+            mean2=mean(job_satisfied),
+            mean3=mean(job_dissatisfied),
+            mean4=mean(job_verydissatisfied),
+            obscount=sum(obscount)) %>% 
+  gather(., key, value,mean1:mean4) %>% 
+  mutate(.,satis_level=ifelse(key=="mean1","Very Satisfied",
+                              ifelse(key=="mean2", "Satisfied",
+                                     ifelse(key=="mean3", "Dissatisfied","Very Dissatisfied")))) %>%
+  mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
+  mutate(.,salary_factor=factor(salary_range, c("$0", "$1-30K","$30K-60K","$60K-100K","$100K-150K",">$150K"))) %>% 
+  mutate(.,value100=value*100) %>% 
+  mutate(.,satis_type="Job - Overall Satisfaction")
+
+dataforplot9_2 <- epcg17_new %>%
+  filter(., jobsatis!="L") %>%
+  mutate(.,salary_range=ifelse(salary==0, "$0",
+                               ifelse(salary>0 & salary <=30000, "$1-30K",
+                                      ifelse(salary>30000 & salary <=60000, "$30K-60K",
+                                             ifelse(salary>60000 & salary <=100000, "$60K-100K",
+                                                    ifelse(salary>100000 & salary <=150000, "$100K-150K",">$150K")))))) %>%
+  mutate(.,sal_verysatisfied=ifelse(satsal=="1",1,0)) %>% 
+  mutate(.,sal_satisfied=ifelse(satsal=="2",1,0)) %>% 
+  mutate(.,sal_dissatisfied=ifelse(satsal=="3",1,0)) %>% 
+  mutate(.,sal_verydissatisfied=ifelse(satsal=="4",1,0)) %>% 
+  mutate(.,obscount=1) %>% 
+  group_by(.,salary_range) %>% 
+  summarize(., mean1=mean(sal_verysatisfied),
+            mean2=mean(sal_satisfied),
+            mean3=mean(sal_dissatisfied),
+            mean4=mean(sal_verydissatisfied),
+            obscount=sum(obscount)) %>% 
+  gather(., key, value,mean1:mean4) %>% 
+  mutate(.,satis_level=ifelse(key=="mean1","Very Satisfied",
+                              ifelse(key=="mean2", "Satisfied",
+                                     ifelse(key=="mean3", "Dissatisfied","Very Dissatisfied")))) %>%
+  mutate(.,satis_level_factor=factor(satis_level,c("Very Satisfied", "Satisfied","Dissatisfied","Very Dissatisfied"))) %>% 
+  mutate(.,salary_factor=factor(salary_range, c("$0", "$1-30K","$30K-60K","$60K-100K","$100K-150K",">$150K"))) %>% 
+  mutate(.,value100=value*100) %>% 
+  mutate(.,satis_type="Salary Satisfaction")
+
+dataforplot9 <- bind_rows(dataforplot9_1, dataforplot9_2)
+  
+
+ggplot(dataforplot9,aes(x=salary_factor, y=value100,fill=satis_level_factor)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label=round(value100,0)), position=position_stack(vjust=0.5)) +
+  facet_wrap(~satis_type)+
+  labs(title ="Figure 9. Job and Salary Satisfaction by Salary Groups",
+       caption = "Data: National Survey of College Graduates",
+       y = "Percent") +
+  scale_fill_brewer(name="Satisfaction Level",
+                    type="div",
+                    palette="RdBu",
+                    direction = -1) +
+  theme(axis.title.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        axis.text.x = element_text(size=8, angle=20))
 
 ```
+
+```{r, include=FALSE, cache=TRUE}
+### Prep Machine Learning, not to be included in slide output ###
+
+epcg_ml <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary, 
+                  "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
+                  "employer_sector"=emsecdt, "loan_amount"=ugloanr, "job_satisfaction"=job_satisfied)
+
+# Ensure all factor levels are correct
+epcg_ml$job_satisfaction <- factor(epcg_ml$job_satisfaction, 
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
+# Set seed for replicability
+set.seed(123)  
+
+# Partition data into training and test
+index = createDataPartition(epcg_ml$job_satisfaction,p=.75,list=F) 
+epcg_train = epcg_ml[index,] # Use 75% of the data as training data 
+epcg_test = epcg_ml[-index,] # holdout 25% as test data 
+
+# Continuous variables that may need redistributing: salary
+convert_salary <- . %>% mutate(salary = log(salary+1))
+
+epcg_train2 <- epcg_train %>%  convert_salary()
+epcg_test2 <- epcg_test %>%  convert_salary()
+
+# Prep the recipe
+rcp <- 
+  recipe(job_satisfaction~.,epcg_train2) %>% 
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  step_range(salary, age) %>%
+  step_knnimpute(all_predictors()) %>%
+  prep()
+
+# Bake the recipe
+epcg_train3 <- bake(rcp,epcg_train2)
+epcg_test3 <- bake(rcp,epcg_test2)
+
+# Set seed for replicability
+set.seed(123)  
+
+# Partition the data into 5 equal folds
+folds <- createFolds(epcg_train3$job_satisfaction, k = 5) 
+
+# Apply the folds
+sapply(folds,length)
+
+# Setting the control conditions to compare results across different model specifications
+control_conditions <- 
+  trainControl(method='cv',
+               summaryFunction = twoClassSummary,
+               classProbs = TRUE, 
+               index = folds)
+
+# KKN Model
+epgc_mod_knn <-
+  train(job_satisfaction ~ .,
+        data=epcg_train3,
+        method = "knn",
+        metric = "ROC",
+        trControl = control_conditions)
+
+# Tuned KNN Model
+knn_tune = expand.grid(k = c(1,3,5,10))
+epgc_mod_knn2 <-
+  train(job_satisfaction ~ .,
+        data=epcg_train3,
+        method = "knn",
+        metric = "ROC",
+        tuneGrid = knn_tune,
+        trControl = control_conditions)
+
+# Regression Tree Model
+epgc_mod_cart <-
+  train(job_satisfaction ~ .,
+        data=epcg_train3,  
+        method = "rpart", 
+        metric = "ROC", 
+        trControl = control_conditions)
+
+# Set tuning parameter for regression tree
+tune_cart2 <- expand.grid(cp = c(0.0010281))
+
+# Expanded Regression Tree Model
+epgc_mod_cart2 <-
+  train(job_satisfaction ~ .,
+        data=epcg_train3,  
+        method = "rpart", 
+        metric = "ROC", 
+        tuneGrid = tune_cart2,
+        trControl = control_conditions)
+
+# Random Forest Model
+epgc_mod_rf <-
+  train(job_satisfaction ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity', 
+        trControl = control_conditions)
+
+# Set tuning parameters for Random Forest Model
+epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+
+# Tuned Random Forest Model
+epgc_mod_rf2 <-
+  train(job_satisfaction ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity',
+        tuneGrid = epgc_tune_rf,
+        trControl = control_conditions)
+
+mod_list <-
+  list(
+    knn1 = epgc_mod_knn,
+    knn2 = epgc_mod_knn2,
+    cart1 = epgc_mod_cart,
+    cart2 = epgc_mod_cart2,
+    rf = epgc_mod_rf,
+    rf2 = epgc_mod_rf2
+  )
+```
+
+## Results - Machine Learning: Dot Plot Performance Measurement
+```{r}
+# Plotting Performance
+dotplot(resamples(mod_list))
+```
+
+## Results - Machine Learning: Tuned Random Forest, Recent Graduates
+```{r}
+pred <- predict(epgc_mod_rf2, newdata = epcg_test3)
+confusionMatrix(table(pred,epcg_test3$job_satisfaction))
+```
+
+## Results - Machine Learning: Tuned Random Forest Variable Importance
+```{r, fig.height=10,fig.width=5, cache=TRUE}
+plot(varImp(epgc_mod_rf2))
+```
+
+```{r, include=FALSE}
+# Set up data and machine learning model for full sample
+epcg17_all <-  epcg17 %>% 
+  filter(., ugloanr!="01" & emrg<10) %>% 
+  # selecting age, race, gender, undergraduate loan amoutn, graduate loan amount, physical disability indicator
+  select(age, racethm, ugloanr, gender, grloanr, hcapin,
+         #degree information, second to fifth highest degrees, highest degree, most recent degree
+         d2dg, d3dg, d4dg, d5dg, dgrdg, mrdg,
+         #primary/secondary work activity, public/private status of undergrad institution, year ba received
+         actcap:acttch, bapbpr, bayr,
+         # reason for changing employer
+         chchg:chloc, chot:chsch,
+         # visa type for non-US citizen, year highest degree awarded, father and mother's education level
+         ctzfor, dgryr, eddad, edmom,
+         #region code for employer, employer type, employer size, detailed employer sector, 
+         emrg, emtp, emsize, emsecdt, emsecsm, facadv:facsoc,
+         # hours per week worked, job benefits, job satisfaction, labor force status, looking for work, marital status
+         hrswk, jobins:jobproft, jobvac, jobsatis, lfstat, lookwk, marsta,
+         # job code for last job, job code for principal job, field of study of BA degree, employer type
+         n2ocmlst, n2ocprmg, nbamed, nedtp,
+         # reasons for working outside field of highest degree, most important reason for working outside field
+         nrchg:nrpay, nrrea,
+         # reasons for not working, extent job is related to highest degree, reason worked part-time
+         nwfam:nwstu, ocedrlp, pjfam:pjstu,
+         # respondent location, salary, satisfaction in prinicipal job for..., spouse working indicator, year principal job started
+         resploc, salary, satadv:satsoc, spowk, strtyr,
+         # amount still owed from undergrad loan, amount still owed from grad loan, veteran status 
+         ugower, grower, vetstat) %>% 
+  # creating gender and race indicators
+  mutate(., female = ifelse(gender=="F", 1,0)) %>% 
+  mutate(., race_white = ifelse(racethm=="5",1,0 )) %>% 
+  mutate(., race_black = ifelse(racethm=="3",1,0 )) %>% 
+  mutate(., race_hispanic = ifelse(racethm=="4",1,0 )) %>%
+  mutate(., race_asian = ifelse(racethm=="1",1,0 )) %>%
+  mutate(., race_other = ifelse(racethm=="2" | racethm=="6" | racethm=="7", 1,0)) %>% 
+  # replacing 9999998 to NA for salary variable
+  mutate(., salary= ifelse(salary==9999998, NA, salary)) %>% 
+  # bachelor degree indicator
+  mutate(., bachelor_degree= ifelse(mrdg=="1", 1,
+                                    ifelse(dgrdg=="1", 1,
+                                           ifelse(d2dg=="1", 1,
+                                                  ifelse(d3dg=="1", 1,
+                                                         ifelse(d4dg=="1",1,
+                                                                ifelse(d5dg=="1", 1, 0))))))) %>%
+  # master's degree indicator
+  mutate(., master_degree= ifelse(mrdg=="2", 1,
+                                    ifelse(dgrdg=="2", 1,
+                                           ifelse(d2dg=="2", 1,
+                                                  ifelse(d3dg=="2", 1,
+                                                         ifelse(d4dg=="2",1,
+                                                                ifelse(d5dg=="2", 1, 0))))))) %>%
+  mutate(., doctorate_degree= ifelse(mrdg=="3", 1,
+                                    ifelse(dgrdg=="3", 1,
+                                           ifelse(d2dg=="3", 1,
+                                                  ifelse(d3dg=="3", 1,
+                                                         ifelse(d4dg=="3",1,
+                                                                ifelse(d5dg=="3", 1, 0))))))) %>%
+  # professional degree
+  mutate(., professional_degree= ifelse(mrdg=="4", 1,
+                                    ifelse(dgrdg=="4", 1,
+                                           ifelse(d2dg=="4", 1,
+                                                  ifelse(d3dg=="4", 1,
+                                                         ifelse(d4dg=="4",1,
+                                                                ifelse(d5dg=="4", 1, 0))))))) %>%
+  mutate(.,satadv_satisfied = if_else(satadv=="1" | satadv =="2", 1, 0)) %>% 
+  mutate(.,satben_satisfied = if_else(satben=="1" | satben =="2", 1, 0)) %>%
+  mutate(.,satsal_satisfied = if_else(satsal=="1" | satsal =="2", 1, 0)) %>%
+  mutate(.,satsec_satisfied = if_else(satsec=="1" | satsec =="2", 1, 0)) %>%
+  mutate(.,satresp_satisfied = if_else(satresp=="1" | satresp =="2", 1, 0)) %>% 
+  mutate(.,job_satisfied = if_else(jobsatis=="1" | jobsatis =="2", 1, 0))
+
+# New machine learning data set with full observations
+epcg_ml_all <- select(epcg17_all, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary, 
+                  "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
+                  "employer_sector"=emsecdt, "loan_amount"=ugloanr, "job_satisfaction"=job_satisfied)
+
+# Ensure all factor levels are correct
+epcg_ml_all$job_satisfaction <- factor(epcg_ml_all$job_satisfaction, 
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
+
+index = createDataPartition(epcg_ml_all$job_satisfaction,p=.75,list=F) 
+epcg_train = epcg_ml_all[index,] # Use 75% of the data as training data 
+epcg_test = epcg_ml_all[-index,] # holdout 25% as test data 
+
+# Continuous variables that may need redistributing: salary
+convert_salary <- . %>% mutate(salary = log(salary+1))
+
+epcg_train2 <- epcg_train %>%  convert_salary()
+epcg_test2 <- epcg_test %>%  convert_salary()
+
+# Prep the recipe
+rcp <- 
+  recipe(job_satisfaction~.,epcg_train2) %>% 
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  step_range(salary, age) %>%
+  step_knnimpute(all_predictors()) %>%
+  prep()
+
+# Bake the recipe
+epcg_train3 <- bake(rcp,epcg_train2)
+epcg_test3 <- bake(rcp,epcg_test2)
+
+# Set seed for replicability
+set.seed(123)  
+
+# Partition the data into 5 equal folds
+folds <- createFolds(epcg_train3$job_satisfaction, k = 5) 
+
+# Apply the folds
+sapply(folds,length)
+
+# Setting the control conditions to compare results across different model specifications
+control_conditions <- 
+  trainControl(method='cv',
+               summaryFunction = twoClassSummary,
+               classProbs = TRUE, 
+               index = folds)
+```
+
+## Results - Machine Learning: Tuned Random Forest, Full Sample
+```{r, cache=TRUE}
+# Set tuning parameters for Random Forest Model
+epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+
+# Tuned Random Forest Model
+epgc_mod_rf2 <-
+  train(job_satisfaction ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity',
+        tuneGrid = epgc_tune_rf,
+        trControl = control_conditions)
+
+pred_rf2_all <- predict(epgc_mod_rf2, newdata = epcg_test3)
+confusionMatrix(table(pred_rf2_all,epcg_test3$job_satisfaction))
+```
+
+```{r, include=FALSE}
+# Set up ML for Salary Satisfaction
+epcg_ml_sal <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary, 
+                  "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
+                  "employer_sector"=emsecdt, "loan_amount"=ugloanr, "salary_satisfaction"=satsal_satisfied)
+
+epcg_ml_sal$salary_satisfaction <- factor(epcg_ml_sal$salary_satisfaction, 
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
+
+index = createDataPartition(epcg_ml_sal$salary_satisfaction,p=.75,list=F) 
+epcg_train = epcg_ml_sal[index,] # Use 75% of the data as training data 
+epcg_test = epcg_ml_sal[-index,] # holdout 25% as test data 
+
+# Continuous variables that may need redistributing: salary
+convert_salary <- . %>% mutate(salary = log(salary+1))
+
+epcg_train2 <- epcg_train %>%  convert_salary()
+epcg_test2 <- epcg_test %>%  convert_salary()
+
+# Prep the recipe
+rcp <- 
+  recipe(salary_satisfaction~.,epcg_train2) %>% 
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  step_range(salary, age) %>%
+  step_knnimpute(all_predictors()) %>%
+  prep()
+
+# Bake the recipe
+epcg_train3 <- bake(rcp,epcg_train2)
+epcg_test3 <- bake(rcp,epcg_test2)
+
+# Set seed for replicability
+set.seed(123)  
+
+# Partition the data into 5 equal folds
+folds <- createFolds(epcg_train3$salary_satisfaction, k = 5) 
+
+# Apply the folds
+sapply(folds,length)
+
+# Setting the control conditions to compare results across different model specifications
+control_conditions <- 
+  trainControl(method='cv',
+               summaryFunction = twoClassSummary,
+               classProbs = TRUE, 
+               index = folds)
+
+# Set tuning parameters for Random Forest Model
+epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+```
+
+## Results - Machine Learning: Tuned Random Forest, Salary Satisfaction
+```{r, cache=TRUE}
+# Tuned Random Forest Model
+epgc_mod_rf2 <-
+  train(salary_satisfaction ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity',
+        tuneGrid = epgc_tune_rf,
+        trControl = control_conditions)
+
+pred_rf2_salary <- predict(epgc_mod_rf2, newdata = epcg_test3)
+confusionMatrix(table(pred_rf2_salary,epcg_test3$salary_satisfaction))
+```
+
+```{r}
+# Set up ML for Career Advancement Satisfaction
+epcg_ml_adv <- select(epcg17_new, "age"=age, "race"=racethm, "gender"=gender, "salary"=salary,
+                  "employer_size"=emsize, "employer_region"=emrg, "highest_degree"=dgrdg, 
+                  "employer_sector"=emsecdt, "loan_amount"=ugloanr, "adv_satisfaction"=satadv_satisfied)
+
+epcg_ml_adv$adv_satisfaction <- factor(epcg_ml_adv$adv_satisfaction, 
+                                      levels = c(1, 0), 
+                                      labels = c("Satisfied", "Not_Satisfied"))
+
+index = createDataPartition(epcg_ml_adv$adv_satisfaction,p=.75,list=F) 
+epcg_train = epcg_ml_adv[index,] # Use 75% of the data as training data 
+epcg_test = epcg_ml_adv[-index,] # holdout 25% as test data 
+
+# Continuous variables that may need redistributing: salary
+convert_salary <- . %>% mutate(salary = log(salary+1))
+
+epcg_train2 <- epcg_train %>%  convert_salary()
+epcg_test2 <- epcg_test %>%  convert_salary()
+
+# Prep the recipe
+rcp <- 
+  recipe(adv_satisfaction~.,epcg_train2) %>% 
+  step_dummy(all_nominal(),-all_outcomes()) %>% 
+  step_range(salary, age) %>%
+  step_knnimpute(all_predictors()) %>%
+  prep()
+
+# Bake the recipe
+epcg_train3 <- bake(rcp,epcg_train2)
+epcg_test3 <- bake(rcp,epcg_test2)
+
+# Set seed for replicability
+set.seed(123)  
+
+# Partition the data into 5 equal folds
+folds <- createFolds(epcg_train3$adv_satisfaction, k = 5) 
+
+# Apply the folds
+sapply(folds,length)
+
+# Setting the control conditions to compare results across different model specifications
+control_conditions <- 
+  trainControl(method='cv',
+               summaryFunction = twoClassSummary,
+               classProbs = TRUE, 
+               index = folds)
+
+# Set tuning parameters for Random Forest Model
+epgc_tune_rf <- expand.grid(mtry=1:10, splitrule="gini", min.node.size=5)
+```
+
+## Results - Machine Learning: Tuned Random Forest, Career Advancement Satisfaction
+```{r, cache=TRUE}
+# Tuned Random Forest Model
+epgc_mod_rf2 <-
+  train(adv_satisfaction ~ ., 
+        data=epcg_train3,  
+        method = "ranger", 
+        metric = "ROC", 
+        importance = 'impurity',
+        tuneGrid = epgc_tune_rf,
+        trControl = control_conditions)
+
+pred_rf2_adv <- predict(epgc_mod_rf2, newdata = epcg_test3)
+confusionMatrix(table(pred_rf2_adv,epcg_test3$adv_satisfaction))
+```
+
 ## Limitations
 
 1. Low variation in outcome variable resulted in low sensitivity
 2. Satisfaction may not perfectly represent job mismatch
 3. Loan amount categories instead of numerical values
 
-## Next Steps
+## Conclusions
 
-1. Designing the survey to measure job mismatch
-2. 
+1. Difficult to predict job mismatch and satisfaction given current data
+2. Salary is the most important predictor job satisfaction
+3. Simple to predict job satisfaction, though potential response biases limit our ability to draw conclusions from this finding
 
 
 
